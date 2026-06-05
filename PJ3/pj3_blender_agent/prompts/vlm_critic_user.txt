@@ -1,0 +1,7 @@
+I generated a 3D model of: {description}
+
+The images show 4 rendered views: front, side, top, and isometric (45°).
+
+Identify all structural and geometric problems. For each problem, explain exactly what bpy code change would fix it (e.g., "increase leg_h from 0.2 to 0.44", "move tabletop to z=0.75").
+
+Output as JSON array of issues:

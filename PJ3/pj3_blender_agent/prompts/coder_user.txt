@@ -1,0 +1,9 @@
+Create a Blender Python (bpy) script to model: {description}
+
+{rag_context}
+REQUIREMENTS:
+- Every major part must have a # COMPONENT: <name> comment before it.
+- All parts must be correctly positioned so the furniture looks assembled.
+- Use a wood-like material (brownish color) unless otherwise specified.
+
+Generate the complete bpy script now:

@@ -1,0 +1,6 @@
+/home/keats/CG/PJ2/CMakeFiles/a2.dir
+/home/keats/CG/PJ2/CMakeFiles/edit_cache.dir
+/home/keats/CG/PJ2/CMakeFiles/rebuild_cache.dir
+/home/keats/CG/PJ2/vecmath/CMakeFiles/vecmath.dir
+/home/keats/CG/PJ2/vecmath/CMakeFiles/edit_cache.dir
+/home/keats/CG/PJ2/vecmath/CMakeFiles/rebuild_cache.dir

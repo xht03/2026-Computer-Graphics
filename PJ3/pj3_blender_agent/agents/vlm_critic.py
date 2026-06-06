@@ -90,7 +90,7 @@ class VLMCritic:
                 {"role": "user",   "content": content},
             ],
             temperature=1,
-            max_tokens=4096,
+            max_tokens=16000,
         )
         choice = response.choices[0]
         raw    = choice.message.content or ""

@@ -337,7 +337,7 @@ pj3_blender_agent/
 
 ## 十三、关键参考文献(Related Work 必引)
 
-1. **LL3M** — Lu et al., "LL3M: Large Language 3D Modelers", arXiv:2508.08228, 2025.(**直接对标**)
+1. **LL3M** — Lu et al., "LL3M: Large Language 3D Modelers", arXiv:2508.08228, 2025.(**直接对标**)·
 2. **CAD-Assistant** — Mallis et al., ICCV 2025.(同范式工程方向)
 3. **Worldcraft** — Liu et al., arXiv:2502.15601, 2025.(LLM agents 3D 定制)
 4. **Idea23D** — Chen et al., COLING 2025.(多模态 Agent 3D 生成)

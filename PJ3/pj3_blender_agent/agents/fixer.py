@@ -1,46 +1,23 @@
 import os
 import re
-from zhipuai import ZhipuAI
+from pathlib import Path
+from openai import OpenAI
 
-_FIXER_SYSTEM = """You are a Blender Python (bpy) code repair expert.
-Given a bpy script and a list of issues from visual and geometric critics, output a corrected script.
+_PROMPT_DIR = Path(__file__).parent.parent / "prompts"
 
-RULES:
-1. Output ONLY raw Python code — no markdown fences, no explanation.
-2. Make MINIMAL targeted changes — change only the specific lines that fix each issue.
-   Do NOT rewrite, reorder, or restructure code that is already correct.
-3. Fix every listed issue. For geometry issues, adjust numeric values (locations, scales).
-4. Do NOT add cameras, lights, or render code.
-5. FORBIDDEN (never generate these):
-   - bpy.ops.object.move_to_cursor()
-   - bpy.ops.object.select_by_type()
-   - bpy.ops.object.duplicate()
-   - obj.copy() with .location assignment
-   - radius1= or radius2= in cylinder_add
-   - mesh.from_pydata(...)        <- crashes on malformed data; use primitive_*_add instead
-   - me.from_pydata(...)          <- same, forbidden
-   - Duplicate COMPONENT blocks  <- never repeat a # COMPONENT section
-   - size=<small_float>          <- primitive_cube_add size must always be 1 (the unit cube)
-6. Fix geometry issues by adjusting location/scale values ONLY.
-   Do NOT change the object creation approach (cube vs cylinder).
-7. If a component "appears missing" in the render, it is likely mispositioned — fix its
-   location/scale instead of adding new objects.
-"""
+_FIXER_SYSTEM = (_PROMPT_DIR / "fixer_system.txt").read_text(encoding="utf-8")
+_FIXER_USER   = (_PROMPT_DIR / "fixer_user.txt").read_text(encoding="utf-8")
 
-_FIXER_USER = """Current bpy script:
-```python
-{code}
-```
-
-Issues to fix (address ALL of them):
-{issues}
-
-Output the corrected bpy script (raw Python only):"""
+KIMI_BASE_URL = "https://api.moonshot.cn/v1"
+KIMI_MODEL    = "kimi-k2.5"
 
 
 class FixerAgent:
-    def __init__(self, model: str = "glm-4-flash", verbose: bool = False):
-        self.client = ZhipuAI(api_key=os.getenv("GLM_API_KEY"))
+    def __init__(self, model: str = KIMI_MODEL, verbose: bool = False):
+        self.client = OpenAI(
+            api_key=os.getenv("KIMI_API_KEY"),
+            base_url=KIMI_BASE_URL,
+        )
         self.model = model
         self.verbose = verbose
 
@@ -73,8 +50,8 @@ class FixerAgent:
                 {"role": "system", "content": _FIXER_SYSTEM},
                 {"role": "user", "content": _FIXER_USER.format(code=code, issues=issues_text)},
             ],
-            temperature=0.2,
-            max_tokens=3000,
+            temperature=1,
+            max_tokens=16000,
         )
         raw = response.choices[0].message.content.strip()
 

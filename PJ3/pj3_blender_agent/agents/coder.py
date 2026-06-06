@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from zhipuai import ZhipuAI
+from openai import OpenAI
 
 _PROMPT_DIR = Path(__file__).parent.parent / "prompts"
 
@@ -50,11 +50,18 @@ def sanitize_bpy_code(code: str) -> str:
     return "\n".join(out_lines)
 
 
-class CoderAgent:
-    """调用 GLM-4，根据给定描述生成对应的 bpy 脚本。"""
+KIMI_BASE_URL = "https://api.moonshot.cn/v1"
+KIMI_MODEL    = "kimi-k2.5"
 
-    def __init__(self, model: str = "glm-4-flash"):
-        self.client = ZhipuAI(api_key=os.getenv("GLM_API_KEY"))
+
+class CoderAgent:
+    """调用 Kimi k2.5，根据给定描述生成对应的 bpy 脚本。"""
+
+    def __init__(self, model: str = KIMI_MODEL):
+        self.client = OpenAI(
+            api_key=os.getenv("KIMI_API_KEY"),
+            base_url=KIMI_BASE_URL,
+        )
         self.model = model
         self._system = _load_prompt("coder_system.txt")
         self._user_tmpl = _load_prompt("coder_user.txt")
@@ -87,8 +94,8 @@ class CoderAgent:
                 {"role": "system", "content": self._system},
                 {"role": "user", "content": user_msg},
             ],
-            temperature=0.2,
-            max_tokens=2048,
+            temperature=1,
+            max_tokens=16000,
         )
         raw = response.choices[0].message.content
         code = _extract_code(raw)

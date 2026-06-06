@@ -1,0 +1,9 @@
+Current bpy script:
+```python
+{code}
+```
+
+Issues to fix (address ALL of them):
+{issues}
+
+Output the corrected bpy script (raw Python only):

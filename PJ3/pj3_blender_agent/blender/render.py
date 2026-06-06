@@ -15,10 +15,10 @@ os.makedirs(_OUTPUT_DIR, exist_ok=True)
 scene = bpy.context.scene
 # Use EEVEE for reliable headless rendering (CYCLES needs GPU driver in headless)
 scene.render.engine = 'BLENDER_EEVEE'
-scene.eevee.taa_render_samples = 64
+scene.eevee.taa_render_samples = 128
 scene.render.image_settings.file_format = 'PNG'
-scene.render.resolution_x = 512
-scene.render.resolution_y = 512
+scene.render.resolution_x = 1024
+scene.render.resolution_y = 1024
 scene.render.film_transparent = False
 
 # Ensure a world background exists

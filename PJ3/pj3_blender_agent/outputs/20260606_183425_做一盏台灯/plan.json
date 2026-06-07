@@ -1,0 +1,42 @@
+{
+  "object_name": "Table Lamp",
+  "object_name_zh": "台灯",
+  "description_en": "Create a traditional Chinese style table lamp with a wooden base and a bamboo shade. The lamp should have intricate carvings and a classic lantern design.",
+  "components": [
+    {
+      "name": "wooden_base",
+      "description": "The wooden base of the lamp",
+      "approx_size_m": "0.3m x 0.2m x 0.1m",
+      "count": 1,
+      "position_note": "Bottom of the lamp",
+      "shape": "cylinder"
+    },
+    {
+      "name": "bamboo_shade",
+      "description": "The bamboo shade for the lamp",
+      "approx_size_m": "0.2m x 0.2m x 0.3m",
+      "count": 1,
+      "position_note": "Above the wooden base",
+      "shape": "cone"
+    },
+    {
+      "name": "carving",
+      "description": "Intricate carvings on the wooden base",
+      "approx_size_m": "0.3m x 0.2m x 0.1m",
+      "count": 1,
+      "position_note": "Surface of the wooden base",
+      "shape": "custom"
+    },
+    {
+      "name": "light_bulb_holder",
+      "description": "The holder for the light bulb",
+      "approx_size_m": "0.05m x 0.05m x 0.1m",
+      "count": 1,
+      "position_note": "Top of the bamboo shade",
+      "shape": "cylinder"
+    }
+  ],
+  "overall_dimensions_m": "0.3m x 0.2m x 0.4m",
+  "style_notes": "The lamp should reflect traditional Chinese design elements, with a focus on symmetry and intricate wood carvings. The joinery should be precise, showcasing traditional Chinese craftsmanship. The proportions should be balanced, with the height of the lamp being approximately 1.5 times the diameter of the base.",
+  "estimated_difficulty": "medium"
+}

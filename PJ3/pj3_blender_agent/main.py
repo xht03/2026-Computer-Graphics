@@ -195,7 +195,11 @@ def pipeline(
 
         for iteration in range(1, max_iterations):
             print(f"\n[5/N] Critic round {iteration}...")
-            all_issues: list[dict] = list(prev_geom_issues)
+            # Only error-level geom issues reach the Fixer. The geom verifier
+            # now emits exclusively zero-false-positive hard errors, but we
+            # filter explicitly so any future soft checks can't leak noise in.
+            geom_for_fixer = [i for i in prev_geom_issues if i.get("severity") == "error"]
+            all_issues: list[dict] = list(geom_for_fixer)
 
             if use_vlm:
                 from agents.vlm_critic import VLMCritic
@@ -208,8 +212,8 @@ def pipeline(
                 all_issues.extend(vlm_issues)
                 print(f"  VLM found {len(vlm_issues)} issue(s)")
 
-            if prev_geom_issues:
-                print(f"  Geom carried {len(prev_geom_issues)} issue(s) from previous run")
+            if geom_for_fixer:
+                print(f"  Geom carried {len(geom_for_fixer)} error(s) from previous run")
 
             issues_per_round.append(all_issues)
 

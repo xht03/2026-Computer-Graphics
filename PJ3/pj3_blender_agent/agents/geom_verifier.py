@@ -1,16 +1,26 @@
-"""Geometric Verifier Agent — Day 4 implementation.
+"""Geometric Verifier Agent — semantic-connectivity rewrite.
 
-Architecture:
-  - build_verify_snippet() returns a bpy code snippet injected into the
-    Blender run (BETWEEN model code and render code).
+Design (L3GO-style, see plan): instead of all-pairs AABB guessing (which
+produced false positives that misled the Fixer), this verifier only reports
+ZERO-false-positive HARD ERRORS, all at severity "error":
+
+  E1. Empty scene / empty mesh         — nothing was generated.
+  E2. Degenerate or explosive scale    — a part ≈0 on an axis, or the whole
+                                          model outside [0.05 m, 15 m].
+  E3. Declared connectivity broken     — the model code declares a module-level
+                                          CONNECTIONS list of (part_a, part_b)
+                                          pairs that MUST touch; we check only
+                                          those pairs. A declared pair separated
+                                          by > 1 cm is a real assembly bug.
+
+If the model code does not define CONNECTIONS, E3 is skipped entirely (graceful
+degradation — never guess). The old noisy checks (manifold, all-pairs gap/
+overlap, centre-of-mass, area-heuristic leg detection) are intentionally gone.
+
+Architecture (unchanged):
+  - build_verify_snippet() returns a bpy snippet injected BETWEEN model code
+    and render code, so CONNECTIONS (defined in the model code) is visible.
   - parse_from_stdout() extracts the JSON issue list from captured stdout.
-
-Five checks performed inside Blender:
-  1. Manifold integrity + isolated vertices
-  2. Bounding-box overlap / gap detection between parts
-  3. Overall proportion constraints (scale, H/W ratio)
-  4. Empty mesh guard (zero-vertex objects)
-  5. Centre-of-mass stability (vertex-centroid proxy)
 """
 
 import json
@@ -20,14 +30,21 @@ _SENTINEL_START = "GEOM_VERIFY_START"
 _SENTINEL_END = "GEOM_VERIFY_END"
 
 # -------------------------------------------------------------------
-# The snippet runs INSIDE Blender, so it may use bpy / bmesh / mathutils.
+# The snippet runs INSIDE Blender, so it may use bpy / mathutils.
 # All temporary variable names are prefixed with _G_ to avoid collisions
-# with the model code above it.
+# with the model code above it.  CONNECTIONS, if defined by the model code,
+# lives in the same module globals and is read via globals().get(...).
 # -------------------------------------------------------------------
 _GEOM_VERIFY_SNIPPET = """\
 # ── Programmatic Geometry Verification (injected by GeomVerifier) ───────────
-import bpy as _bpy, bmesh as _bmesh, json as _json, math as _math
+import bpy as _bpy, json as _json
 import mathutils as _mu
+
+# CRITICAL: the model code sets obj.scale/obj.location by direct assignment,
+# which does NOT refresh obj.matrix_world until the depsgraph updates. Without
+# this call every bbox below would be read from the UNSCALED unit cube, making
+# all geometry checks wrong. Force the transforms to settle first.
+_bpy.context.view_layer.update()
 
 _G_ISSUES = []
 
@@ -38,8 +55,17 @@ def _G_bbox_world(obj):
             max(v.x for v in c), max(v.y for v in c), max(v.z for v in c))
 
 
+def _G_aabb_gap(b1, b2):
+    # Smallest 3-D separation between two AABBs (0 if they touch/overlap).
+    _dx = max(0.0, max(b1[0], b2[0]) - min(b1[3], b2[3]))
+    _dy = max(0.0, max(b1[1], b2[1]) - min(b1[4], b2[4]))
+    _dz = max(0.0, max(b1[2], b2[2]) - min(b1[5], b2[5]))
+    return (_dx * _dx + _dy * _dy + _dz * _dz) ** 0.5
+
+
 _G_mesh_objs = [o for o in _bpy.data.objects if o.type == 'MESH']
 
+# ── E1: Empty scene / empty mesh ─────────────────────────────────────────
 if not _G_mesh_objs:
     _G_ISSUES.append({
         "source": "geom", "severity": "error",
@@ -47,30 +73,7 @@ if not _G_mesh_objs:
         "component": "scene",
     })
 else:
-    # ── Check 1: Manifold integrity + isolated vertices ──────────────────
     for _G_obj in _G_mesh_objs:
-        _G_bm = _bmesh.new()
-        _G_bm.from_mesh(_G_obj.data)
-        _G_nm = sum(1 for e in _G_bm.edges if not e.is_manifold)
-        _G_iv = sum(1 for v in _G_bm.verts if not v.link_edges)
-        _G_bm.free()
-
-        if _G_nm > 0:
-            _G_ISSUES.append({
-                "source": "geom", "severity": "warning",
-                "message": (f"'{_G_obj.name}' has {_G_nm} non-manifold edge(s). "
-                            "This prevents clean 3D-printing or physics simulation."),
-                "component": _G_obj.name,
-            })
-        if _G_iv > 0:
-            _G_ISSUES.append({
-                "source": "geom", "severity": "warning",
-                "message": (f"'{_G_obj.name}' has {_G_iv} isolated vertex/vertices "
-                            "(dangling geometry with no edges)."),
-                "component": _G_obj.name,
-            })
-
-        # ── Check 4: Empty mesh guard ────────────────────────────────────
         if len(_G_obj.data.vertices) == 0:
             _G_ISSUES.append({
                 "source": "geom", "severity": "error",
@@ -78,157 +81,84 @@ else:
                 "component": _G_obj.name,
             })
 
-    # ── Check 2: Bounding-box overlap / gap between parts ────────────────
     _G_bboxes = {o.name: _G_bbox_world(o) for o in _G_mesh_objs}
-    _G_names  = list(_G_bboxes.keys())
-    _G_gap_candidates = []  # (gap_m, name1, name2) for deferred reporting
-    for _G_i in range(len(_G_names)):
-        for _G_j in range(_G_i + 1, len(_G_names)):
-            _G_n1, _G_n2 = _G_names[_G_i], _G_names[_G_j]
-            _G_b1, _G_b2 = _G_bboxes[_G_n1], _G_bboxes[_G_n2]
 
-            # Overlap: positive intersection volume in all three axes
-            _G_ox = max(0.0, min(_G_b1[3], _G_b2[3]) - max(_G_b1[0], _G_b2[0]))
-            _G_oy = max(0.0, min(_G_b1[4], _G_b2[4]) - max(_G_b1[1], _G_b2[1]))
-            _G_oz = max(0.0, min(_G_b1[5], _G_b2[5]) - max(_G_b1[2], _G_b2[2]))
-            if _G_ox > 0.01 and _G_oy > 0.01 and _G_oz > 0.01:
-                _G_vol = _G_ox * _G_oy * _G_oz
-                if _G_vol > 5e-4:  # ignore < 0.5 cm³ floating-point tolerance
-                    _G_ISSUES.append({
-                        "source": "geom", "severity": "warning",
-                        "message": (
-                            f"'{_G_n1}' and '{_G_n2}' interpenetrate "
-                            f"(overlap ≈ {_G_vol * 1e6:.1f} cm³). "
-                            "Parts are colliding — check positions/scales."
-                        ),
-                        "component": f"{_G_n1},{_G_n2}",
-                    })
-            else:
-                # Gap: smallest 3-D separation between the two AABBs
-                _G_dx = max(0.0, max(_G_b1[0], _G_b2[0]) - min(_G_b1[3], _G_b2[3]))
-                _G_dy = max(0.0, max(_G_b1[1], _G_b2[1]) - min(_G_b1[4], _G_b2[4]))
-                _G_dz = max(0.0, max(_G_b1[2], _G_b2[2]) - min(_G_b1[5], _G_b2[5]))
-                _G_gap = _math.sqrt(_G_dx * _G_dx + _G_dy * _G_dy + _G_dz * _G_dz)
-                # Flag suspicious gaps: 1 cm – 12 cm.
-                # Upper limit 12 cm prevents false positives: parts > 12 cm apart
-                # were never meant to be joined (e.g. legs across a table's width).
-                if 0.01 < _G_gap < 0.12:
-                    _G_gap_candidates.append((_G_gap, _G_n1, _G_n2))
+    # ── E2: Degenerate / explosive scale ────────────────────────────────
+    # Per-part: any axis essentially zero (≈ flat/degenerate part).
+    for _G_name, _G_b in _G_bboxes.items():
+        _G_dims = (_G_b[3] - _G_b[0], _G_b[4] - _G_b[1], _G_b[5] - _G_b[2])
+        if min(_G_dims) < 1e-4:
+            _G_ISSUES.append({
+                "source": "geom", "severity": "error",
+                "message": (
+                    f"'{_G_name}' is degenerate (size "
+                    f"{_G_dims[0]:.4f}x{_G_dims[1]:.4f}x{_G_dims[2]:.4f} m) — "
+                    "one axis is ~0. Check its scale."
+                ),
+                "component": _G_name,
+            })
 
-    # Report only the top-3 smallest gaps (most suspicious) to keep issue count low.
-    _G_gap_candidates.sort()
-    for _G_gap, _G_n1, _G_n2 in _G_gap_candidates[:3]:
-        _G_ISSUES.append({
-            "source": "geom", "severity": "info",
-            "message": (
-                f"Gap between '{_G_n1}' and '{_G_n2}': "
-                f"{_G_gap * 100:.1f} cm. "
-                "Parts may not be properly joined — VLM cannot detect this."
-            ),
-            "component": f"{_G_n1},{_G_n2}",
-        })
-
-    # ── Check 3: Overall proportion constraints ───────────────────────────
-    _G_all_c = []
-    for _G_obj in _G_mesh_objs:
-        _G_all_c.extend([_G_obj.matrix_world @ _mu.Vector(v) for v in _G_obj.bound_box])
-    _G_Xmin = min(c.x for c in _G_all_c); _G_Xmax = max(c.x for c in _G_all_c)
-    _G_Ymin = min(c.y for c in _G_all_c); _G_Ymax = max(c.y for c in _G_all_c)
-    _G_Zmin = min(c.z for c in _G_all_c); _G_Zmax = max(c.z for c in _G_all_c)
-    _G_W = _G_Xmax - _G_Xmin
-    _G_D = _G_Ymax - _G_Ymin
-    _G_H = _G_Zmax - _G_Zmin
-
-    for _G_dname, _G_dval in [("width", _G_W), ("depth", _G_D), ("height", _G_H)]:
+    # Whole-model: overall bounding box far outside furniture range.
+    _G_Xmin = min(b[0] for b in _G_bboxes.values())
+    _G_Ymin = min(b[1] for b in _G_bboxes.values())
+    _G_Zmin = min(b[2] for b in _G_bboxes.values())
+    _G_Xmax = max(b[3] for b in _G_bboxes.values())
+    _G_Ymax = max(b[4] for b in _G_bboxes.values())
+    _G_Zmax = max(b[5] for b in _G_bboxes.values())
+    _G_dims_all = {"width": _G_Xmax - _G_Xmin,
+                   "depth": _G_Ymax - _G_Ymin,
+                   "height": _G_Zmax - _G_Zmin}
+    for _G_dname, _G_dval in _G_dims_all.items():
         if _G_dval > 0 and (_G_dval < 0.05 or _G_dval > 15.0):
             _G_ISSUES.append({
-                "source": "geom", "severity": "warning",
+                "source": "geom", "severity": "error",
                 "message": (
-                    f"Overall {_G_dname} is {_G_dval:.3f} m — outside typical "
-                    "furniture range [0.05, 15.0] m. Check scale."
+                    f"Overall {_G_dname} is {_G_dval:.3f} m — outside the valid "
+                    "furniture range [0.05, 15.0] m. The whole model is mis-scaled."
                 ),
                 "component": "scene",
             })
 
-    if _G_H > 0 and _G_W > 0 and _G_H / _G_W > 6.0:
-        _G_ISSUES.append({
-            "source": "geom", "severity": "warning",
-            "message": (
-                f"Height/width ratio {_G_H / _G_W:.2f} is very large. "
-                "Object may be unrealistically tall or narrow."
-            ),
-            "component": "scene",
-        })
+    # ── E3: Declared connectivity ───────────────────────────────────────
+    # Read CONNECTIONS from the model code's globals (if it declared any).
+    _G_conns = globals().get("CONNECTIONS", None)
+    if isinstance(_G_conns, (list, tuple)):
+        def _G_match(spec):
+            # Resolve a CONNECTIONS name to actual object bboxes:
+            # exact name first, else prefix match (e.g. "leg" -> leg_1..leg_4).
+            if spec in _G_bboxes:
+                return [spec]
+            _hits = [n for n in _G_bboxes if n.startswith(spec)]
+            return _hits
 
-    # ── Check 5: Centre-of-mass stability (vertex centroid proxy) ────────
-    _G_tx = _G_ty = 0.0
-    _G_n = 0
-    for _G_obj in _G_mesh_objs:
-        for _G_v in _G_obj.data.vertices:
-            _G_wv = _G_obj.matrix_world @ _G_v.co
-            _G_tx += _G_wv.x
-            _G_ty += _G_wv.y
-            _G_n  += 1
-    if _G_n > 0:
-        _G_cx = _G_tx / _G_n
-        _G_cy = _G_ty / _G_n
-        _G_margin = max(_G_W, _G_D) * 0.15
-        if not (_G_Xmin - _G_margin <= _G_cx <= _G_Xmax + _G_margin and
-                _G_Ymin - _G_margin <= _G_cy <= _G_Ymax + _G_margin):
-            _G_ISSUES.append({
-                "source": "geom", "severity": "info",
-                "message": (
-                    f"Estimated centre-of-mass ({_G_cx:.2f}, {_G_cy:.2f}) "
-                    "is outside the footprint. Object may be structurally unstable."
-                ),
-                "component": "scene",
-            })
-
-    # ── Check 6: Leg-to-tabletop connectivity ────────────────────────────
-    # Find the candidate "top surface" = object with largest XY footprint.
-    # Then verify that all narrow objects (legs) below it actually touch it.
-    _G_xy_areas = {
-        o.name: (_G_bboxes[o.name][3] - _G_bboxes[o.name][0]) *
-                (_G_bboxes[o.name][4] - _G_bboxes[o.name][1])
-        for o in _G_mesh_objs
-    }
-    if len(_G_xy_areas) >= 2:
-        _G_top_name = max(_G_xy_areas, key=lambda n: _G_xy_areas[n])
-        _G_top_bbox = _G_bboxes[_G_top_name]
-        _G_top_area = _G_xy_areas[_G_top_name]
-        _G_top_z_bottom = _G_top_bbox[2]   # min-z of the top surface = its bottom face
-
-        for _G_n, _G_b in _G_bboxes.items():
-            if _G_n == _G_top_name:
+        _G_TOL = 0.01  # 1 cm: declared-to-touch parts farther than this = bug
+        _G_reported = set()
+        for _G_pair in _G_conns:
+            if not (isinstance(_G_pair, (list, tuple)) and len(_G_pair) == 2):
                 continue
-            _G_part_area = _G_xy_areas[_G_n]
-            # Only examine narrow objects (legs/posts): area < 15% of top surface
-            if _G_part_area >= _G_top_area * 0.15:
-                continue
-            # Must overlap in XY with the top surface (i.e. be "under" it)
-            _G_xy_ox = max(0.0, min(_G_b[3], _G_top_bbox[3]) - max(_G_b[0], _G_top_bbox[0]))
-            _G_xy_oy = max(0.0, min(_G_b[4], _G_top_bbox[4]) - max(_G_b[1], _G_top_bbox[1]))
-            if _G_xy_ox <= 0 or _G_xy_oy <= 0:
-                continue
-            # Must be below the top surface
-            _G_part_z_top = _G_b[5]
-            if _G_part_z_top >= _G_top_z_bottom + 0.001:
-                continue  # object is above the top surface (not a leg)
-            _G_v_gap = _G_top_z_bottom - _G_part_z_top
-            if _G_v_gap > 0.005:  # gap > 5 mm is a bug
-                _G_target_leg_h = _G_top_z_bottom
-                _G_ISSUES.append({
-                    "source": "geom", "severity": "warning",
-                    "message": (
-                        f"Leg/post '{_G_n}' top is at z={_G_part_z_top:.4f} m but "
-                        f"'{_G_top_name}' bottom is at z={_G_top_z_bottom:.4f} m "
-                        f"(gap = {_G_v_gap * 100:.1f} cm). "
-                        f"Fix: set leg_h = {_G_target_leg_h:.4f} and "
-                        f"leg.location.z = {_G_target_leg_h / 2:.4f}, "
-                        f"leg.scale.z = {_G_target_leg_h / 2:.4f}."
-                    ),
-                    "component": f"{_G_n},{_G_top_name}",
-                })
+            _G_a_names = _G_match(str(_G_pair[0]))
+            _G_b_names = _G_match(str(_G_pair[1]))
+            if not _G_a_names or not _G_b_names:
+                continue  # name not found — skip rather than guess
+            for _G_an in _G_a_names:
+                # A declared part is satisfied if it touches ANY resolved
+                # counterpart (e.g. leg_1 only needs to touch the tabletop).
+                _G_min_gap = min(_G_aabb_gap(_G_bboxes[_G_an], _G_bboxes[_G_bn])
+                                 for _G_bn in _G_b_names if _G_bn != _G_an)
+                if _G_min_gap > _G_TOL:
+                    _G_key = tuple(sorted((_G_an, str(_G_pair[1]))))
+                    if _G_key in _G_reported:
+                        continue
+                    _G_reported.add(_G_key)
+                    _G_ISSUES.append({
+                        "source": "geom", "severity": "error",
+                        "message": (
+                            f"Declared connection '{_G_an}' <-> '{_G_pair[1]}' is "
+                            f"broken: parts are {_G_min_gap * 100:.1f} cm apart but "
+                            "were declared to touch. Reposition/resize so they meet."
+                        ),
+                        "component": f"{_G_an},{_G_pair[1]}",
+                    })
 
 print("GEOM_VERIFY_START")
 print(_json.dumps(_G_ISSUES, ensure_ascii=False))

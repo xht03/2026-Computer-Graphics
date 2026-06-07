@@ -32,7 +32,7 @@ _BAD_LINE_PATTERNS = [
     re.compile(r"primitive_cube_add\s*\(.*size\s*=\s*0\."), # size=0.x 会生成微型方块，应为 size=1
     # 循环内对创建后物体的 scale/location 累加操作（"弯腿"反模式）。
     # 会破坏 leg_h = TH - top_t 的不变量，导致桌腿与桌面脱节。
-    re.compile(r"\.\s*scale\s*\.\s*[xyz]\s*[+\-\*\/]="),   # 例：leg.scale.z -= leg.scale.z/4
+    re.compile(r"\.\s*scale\s*\.\s*[xyz]\s*[+\-\*\/]="),    # 例：leg.scale.z -= leg.scale.z/4
     re.compile(r"\.\s*location\s*\.\s*[xyz]\s*[+\-\*\/]="), # 例：leg.location.z += ...
 ]
 

@@ -71,4 +71,11 @@ class PlannerAgent:
                     line += f", position: {pos}"
                 lines.append(line)
 
+        connections = plan.get("connections")
+        if connections:
+            lines.append("Required connections (these parts MUST physically touch):")
+            for pair in connections:
+                if isinstance(pair, (list, tuple)) and len(pair) == 2:
+                    lines.append(f"  - {pair[0]} <-> {pair[1]}")
+
         return "\n".join(lines)

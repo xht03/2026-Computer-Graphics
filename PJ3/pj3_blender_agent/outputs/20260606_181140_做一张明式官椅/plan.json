@@ -1,0 +1,50 @@
+{
+  "object_name": "Ming-style Official Hat Chair",
+  "object_name_zh": "明式官帽椅",
+  "description_en": "A traditional Ming dynasty official hat chair, characterized by a tall back panel, armrests, and a curved top rail. The chair is known for its elegance and simplicity in design.",
+  "components": [
+    {
+      "name": "back_panel",
+      "description": "The tall back panel of the chair",
+      "approx_size_m": "0.55m x 1.1m x 0.1m",
+      "count": 1,
+      "position_note": "centered behind the seat",
+      "shape": "custom"
+    },
+    {
+      "name": "seat",
+      "description": "The seat of the chair",
+      "approx_size_m": "0.55m x 0.48m x 0.45m",
+      "count": 1,
+      "position_note": "at the base of the back panel",
+      "shape": "custom"
+    },
+    {
+      "name": "armrest",
+      "description": "The armrests of the chair",
+      "approx_size_m": "0.48m x 0.1m x 0.1m",
+      "count": 2,
+      "position_note": "extending from the back panel to the front of the seat",
+      "shape": "custom"
+    },
+    {
+      "name": "leg",
+      "description": "The legs of the chair",
+      "approx_size_m": "0.48m x 0.1m x 0.1m",
+      "count": 4,
+      "position_note": "four corners of the seat base",
+      "shape": "custom"
+    },
+    {
+      "name": "top_rail",
+      "description": "The curved top rail of the chair",
+      "approx_size_m": "0.55m x 0.1m x 0.1m",
+      "count": 1,
+      "position_note": "connecting the back panel and armrests",
+      "shape": "custom"
+    }
+  ],
+  "overall_dimensions_m": "0.55m x 0.48m x 1.15m",
+  "style_notes": "Elegant and simple Ming dynasty style, with a curved top rail and a tall back panel. Legs are proportionate to the overall height, following traditional Ming proportions.",
+  "estimated_difficulty": "medium"
+}

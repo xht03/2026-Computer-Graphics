@@ -9,100 +9,76 @@ STRICT OUTPUT RULES:
    bpy.ops.object.delete(use_global=False)
 3. Label every major part: # COMPONENT: <part_name>
 4. Center the furniture at origin; bottom of legs at z=0.
+   Derive every support's height from the total height — never hard-code it:
+   support_h = total_height - top_thickness, so the support's top exactly meets
+   the bottom of whatever it holds up (leg top = tabletop bottom, leg bottom = 0).
 5. Use bpy.data.materials with use_nodes=True for colors/materials.
 6. Do NOT add cameras or lights (added externally).
 7. Only import: bpy, math (mathutils is available but rarely needed).
-8. Keep under 200 lines.
+8. Keep under 500 lines.
+9. After creating ALL parts, declare which parts must physically touch by
+   defining a module-level list named CONNECTIONS, using the exact obj.name
+   values you assigned. Example:
+       CONNECTIONS = [("leg_1", "tabletop"), ("leg_2", "tabletop"),
+                      ("leg_3", "tabletop"), ("leg_4", "tabletop"),
+                      ("apron", "tabletop")]
+   MANDATORY: EVERY leg / post / support MUST appear in CONNECTIONS, joined to
+   whatever it holds up (the top, seat, or apron). A leg that is not listed is a
+   bug — the most common defect is legs left floating below the top, so the
+   leg↔top (or leg↔apron) connections are the MOST important to declare. Also
+   declare apron↔top, stretcher↔legs, back↔seat, etc.
+   Only omit pairs that are genuinely meant to be separate. This list is used to
+   verify assembly correctness, so it must reflect your true design intent.
+   If the task description provides "Required connections", you MUST include ALL of
+   them in CONNECTIONS (mapping each to your actual obj.name values), and build the
+   parts so those pairs really touch.
 
-CORRECT bpy API — MEMORIZE THESE, DO NOT DEVIATE:
+BPY API SAFETY — these are the real crash sources. Follow exactly.
 
-# Add a cube (use for boards, panels, legs):
-bpy.ops.mesh.primitive_cube_add(size=1, location=(x, y, z))
-obj = bpy.context.active_object
-obj.name = "part_name"
-obj.scale = (sx, sy, sz)   # scale AFTER add; cube half-extent=0.5, so scale.z = height/2
+[Materials] Blender 4.x+ renamed the Principled BSDF sockets; old names raise KeyError.
+   mat = bpy.data.materials.new("Wood"); mat.use_nodes = True
+   bsdf = mat.node_tree.nodes["Principled BSDF"]
+   bsdf.inputs["Base Color"].default_value = (0.45, 0.25, 0.1, 1.0)
+   bsdf.inputs["Roughness"].default_value = 0.6
+   obj.data.materials.append(mat)
+- Use ONLY these socket names: "Base Color", "Metallic", "Roughness", "IOR", "Alpha".
+- NEVER use the pre-4.0 names (they no longer exist): "Specular", "Transmission",
+  "Subsurface", "Clearcoat", "Emission", "Sheen". When unsure, set only Base Color + Roughness.
 
-# Add a cylinder (use for round legs, pillars):
-bpy.ops.mesh.primitive_cylinder_add(radius=r, depth=h, location=(x, y, z))
-# radius1/radius2 DO NOT EXIST — use only "radius"
+[Primitives & size] Use primitives for almost everything (boards, legs, panels, posts).
+- Cube: primitive_cube_add(size=1, location=(x,y,z)); then obj.scale=(w,d,h).
+  A size=1 cube scales to its full size, so scale = the real size in metres (2cm board -> scale.z=0.02).
+- Cylinder: primitive_cylinder_add(radius=r, depth=h, location=(x,y,z)) — depth IS the full height,
+  do NOT also scale z. Only "radius" exists; never write radius1=/radius2= (auto-stripped, breaks the part).
+  For a tapered (round) leg, use a plain cylinder; do not attempt a cone.
+- For a part of height h sitting on the floor: location.z = h/2.
 
-# Material:
-mat = bpy.data.materials.new(name="WoodMat")
-mat.use_nodes = True
-bsdf = mat.node_tree.nodes["Principled BSDF"]
-bsdf.inputs["Base Color"].default_value = (0.45, 0.25, 0.1, 1.0)
-bsdf.inputs["Roughness"].default_value = 0.6
-obj.data.materials.append(mat)
+[Transforms] Compute each part's final size/position from your dimension variables and assign ONCE
+(obj.scale = (...), position via the add() location). Do NOT then nudge them incrementally
+(leg.scale.z -= ..., leg.location.z += ..., or a second pass) — incremental edits drift off the
+computed positions and disconnect parts. Keep all legs/posts vertical: no rotation on individual parts.
 
-FURNITURE COORDINATE CONVENTIONS:
-- Bottom of furniture sits at z=0; top at z=total_height.
-- ALWAYS derive leg_h = total_height - top_thickness  (legs stop exactly where tabletop begins)
-- Leg of height leg_h: location=(x, y, leg_h/2),        scale=(w/2, d/2, leg_h/2)
-  → leg top = leg_h/2 + leg_h/2 = leg_h  ✓
-- Tabletop thickness top_t at total height TH: location=(0, 0, TH - top_t/2), scale=(W/2, D/2, top_t/2)
-  → tabletop bottom = (TH - top_t/2) - top_t/2 = TH - top_t = leg_h  ✓  (they touch)
-- NEVER hard-code leg_h as a separate value — always compute: leg_h = TH - top_t
-- NEVER modify obj.scale or obj.location AFTER the primitive_add block. Set everything at creation time.
+[Curves] Use a curve ONLY for a genuinely curved part (e.g. a chair-back rail); otherwise use primitives.
+- Bezier: spline.bezier_points; pt.co = (x, y, z)        <- EXACTLY 3 numbers, a 4th raises ValueError
+- NURBS / Poly: spline.points;  pt.co = (x, y, z, w)     <- EXACTLY 4 numbers (w is usually 1.0)
+- A new spline already has 1 point, so call .add(N-1) to end up with N points (off-by-one trap).
+- Bezier points need handles: set pt.handle_left_type = pt.handle_right_type = 'AUTO'.
+- Give thickness with curve.bevel_depth, else the curve is an invisible 0-width line.
+- Wrap+link it: obj = bpy.data.objects.new(name, curve); bpy.context.collection.objects.link(obj)
+  Correct minimal curve:
+     cu = bpy.data.curves.new("rail", type='CURVE'); cu.dimensions='3D'; cu.bevel_depth=0.02
+     sp = cu.splines.new('BEZIER'); sp.bezier_points.add(2)        # -> 3 points
+     for bp,(x,y,z) in zip(sp.bezier_points, [(-0.3,0,1.0),(0,0.05,1.1),(0.3,0,1.0)]):
+         bp.co=(x,y,z); bp.handle_left_type=bp.handle_right_type='AUTO'
+     obj = bpy.data.objects.new("rail", cu); bpy.context.collection.objects.link(obj)
 
-FORBIDDEN — THESE CAUSE ERRORS OR DISCONNECTED GEOMETRY, NEVER USE:
-- bpy.ops.object.select_by_type(...)   <- does NOT exist
-- bpy.ops.object.move_to_cursor(...)   <- does NOT exist
-- bpy.ops.object.duplicate()           <- forbidden; use primitive_add in a loop
-- obj.copy() with .location = (a,b,c)  <- nested-tuple bug; use primitive_add loop
-- radius1= or radius2=                 <- primitive_cylinder_add has no radius1/radius2
-- positions = [(x,y),...]; location=(0, y_offset, z)  <- y_offset is a tuple, WRONG
-- Modifying obj.scale or obj.location AFTER creation (e.g. in a second loop or post-hoc block)
-  <- breaks the leg_h = TH - top_t invariant and disconnects legs from tabletop
-- mesh.from_pydata(...)                <- crashes on malformed data; forbidden
+[Forbidden — crash or break assembly]
+- math.cos / math.sin to position legs        -> use explicit corner coordinates ±lx, ±ly
+- bpy.ops.object.duplicate() / .select_by_type(...) / .move_to_cursor(...)  -> loop primitive_*_add instead
+- mesh.from_pydata(...)                        -> malformed data crashes
+- obj.copy() then assigning .location          -> loop primitive_*_add instead
+- obj.location.rotate(...) / Vector.rotate((axis), angle)  -> wrong signature
 
-CORRECT PATTERN — TABLE WITH 4 LEGS (leg_h ALWAYS derived from TH and top_t):
-TH, top_t = 0.78, 0.05          # total height, tabletop thickness
-leg_h = TH - top_t              # = 0.73 — legs stop exactly where tabletop begins
-leg_w, leg_d = 0.06, 0.06
-inset = 0.05
-lx_abs, ly_abs = 0.90/2 - inset, 0.90/2 - inset
-for i, (lx, ly) in enumerate([(lx_abs, ly_abs), (lx_abs, -ly_abs), (-lx_abs, ly_abs), (-lx_abs, -ly_abs)]):
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(lx, ly, leg_h / 2))
-    leg = bpy.context.active_object
-    leg.name = f"leg_{i+1}"
-    leg.scale = (leg_w / 2, leg_d / 2, leg_h / 2)   # leg top = leg_h ✓
-    leg.data.materials.append(mat)
-# Tabletop — bottom at z=leg_h, top at z=TH
-bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, TH - top_t / 2))
-top = bpy.context.active_object
-top.name = "tabletop"
-top.scale = (0.90 / 2, 0.90 / 2, top_t / 2)        # bottom = TH - top_t = leg_h ✓
-top.data.materials.append(mat)
-# DO NOT add any code that modifies leg.scale or leg.location after this point.
-
-CORRECT PATTERN — MULTIPLE SIDE-BY-SIDE PANELS (for 屏风 etc.):
-n_panels = 3
-panel_w, panel_d, panel_h = 0.5, 0.04, 1.8
-gap = 0.02
-for i in range(n_panels):
-    px = (i - (n_panels - 1) / 2.0) * (panel_w + gap)   # px is a FLOAT, not a tuple
-    # COMPONENT: frame
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(px, 0.0, panel_h / 2))
-    frame = bpy.context.active_object
-    frame.name = f"frame_{i+1}"
-    frame.scale = (panel_w / 2, panel_d / 2, panel_h / 2)
-    frame.data.materials.append(mat)
-    # COMPONENT: inner fill
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(px, 0.0, panel_h / 2))
-    inner = bpy.context.active_object
-    inner.name = f"inner_{i+1}"
-    inner.scale = (panel_w / 2 * 0.85, panel_d / 2 * 0.3, panel_h / 2 * 0.88)
-    inner.data.materials.append(mat)
-
-- obj.location.rotate(...)    <- Vector.rotate() takes ONE arg (Euler/Quaternion), not (axis, angle)
-- use_nodes = False           <- never disable nodes; always keep use_nodes = True
-
-KEEP GEOMETRY SIMPLE: do NOT rotate individual legs or tilt parts. All legs are vertical.
-Use only location and scale to position parts. No rotation_euler on individual components.
-
-TYPICAL FURNITURE DIMENSIONS (meters):
-- 长凳 bench: 1.2 x 0.3 x 0.45h, 4 legs at 0.44h, top board 1.2 x 0.3 x 0.05
-- 方桌 square table: 0.9 x 0.9 x 0.78h, legs at 0.73h, top 0.9 x 0.9 x 0.05
-- 屏风 3-panel screen: each panel 0.5w x 0.04d x 1.8h, spaced 0.52 apart in X
-- 案几 altar table: 1.0 x 0.35 x 0.85h, 4 legs
-- 太师椅 armchair: seat at 0.50h, back to 1.1h, 0.65w x 0.55d
+[Mode] The script runs headless in OBJECT mode. Use only data-API calls (primitive_*_add,
+obj.scale/location/material, the curve pattern above). Do not enter edit mode or call operators
+that need a 3D-viewport context.

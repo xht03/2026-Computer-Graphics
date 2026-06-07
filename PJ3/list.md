@@ -131,3 +131,23 @@
 - 端到端 `做一盏台灯 --geom`：检索 3 条（sphere/torus/Principled）→ 生成代码全用安全 socket 名（Base Color/Metallic/Roughness，无 Specular/Transmission 崩溃）→ geom 0 问题、渲染成功。
 
 **RAG 重构小结**：知识库从「AI 生成成品样例」彻底转为「内省本机 Blender 的 API 文档」（LL3M BlenderRAG 路线），两处接入——Coder 编码前（plan 驱动）+ Fixer 报错时（traceback 驱动）。
+
+### ✅ VLM 拿回「宏观摆放错误」职责（已完成，修正问题 2/3 的矫枉过正）
+
+**背景**：问题 2/3 把所有位置/结构都禁了，导致「灯泡露在灯罩外」这类**粗大摆放错误**没人管（geom 只查声明连接的缝隙，灯泡↔socket 相接即通过；VLM 被全面禁位置）。
+
+**分界改为按"尺度"而非"是否碰位置"**：
+- VLM 该报：粗大、一眼可见的**摆放/空间关系错误**（错位、错朝向、该藏的露在外/该包含的在外面）。
+- VLM 不该报：细粒度接触（精确相接、毫米缝隙、微穿插、绝对尺度）——仍归 geom。
+
+**改动**：`vlm_critic_system.txt`（DIVISION OF LABOR 重写为按尺度分工，✅清单加"GROSS placement/spatial-relationship errors"项）+ `vlm_critic_user.txt`。
+
+**实测**：灯泡露出渲染——VLM 能准确报为 error（"bulb exposed below shade"），好模型仍 0 误报。但**检测率仅 1/3**，瓶颈是**渲染取景太小**（灯泡在画面里太小看不清）→ 指向下一步：渲染自动取景。
+
+### ✅ 渲染自动取景（已完成）
+
+**动机**：固定相机为 ~1m 家具标定，台灯/部件/花瓶都在画面里很小 → 害 VLM 检测、害人工检查（曾把正确八仙桌误看成断腿）。
+
+**改动**：`blender/render.py` —— 渲染前算所有 MESH 的世界包围盒，取中心+半径，按相机 FOV（`cam_data.angle`）算距离 `radius/tan(fov/2)*1.25`，四视图改为「中心 + 单位方向×距离、look_at 中心」。**只动相机，灯光不变**（灯光在远处、范围大，缩放相机不影响照明，避开照明强度连锁问题）。空场景兜底默认距离。
+
+**实测**：台灯填满画面，灯泡露出一目了然；VLM 灯泡检测 **1/3 → 2/3**，报错更精准。一改多利（VLM 检测↑、人工检查↑、问题5 查看器复用）。

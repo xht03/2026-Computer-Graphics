@@ -4,10 +4,13 @@ The images show 4 rendered views: front, side, top, and isometric (45°).
 
 Critique the DESIGN of this model: proportion & balance, style fidelity to the
 description, design richness, symmetry, material/colour, missing or extra parts,
-and whether the overall shape reads as the intended object.
+whether the overall shape reads as the intended object, and any GROSS placement /
+spatial-relationship mistake (a part clearly in the wrong place, on the wrong side,
+wrongly oriented, or exposed where it should be hidden/enclosed).
 
-Remember: do NOT report gaps, contact, floating, clipping/interpenetration, or
-absolute scale — a separate geometric verifier already handles those. Do not
-suggest code fixes or specific numbers.
+Remember the scale split: do NOT report fine contact judgments — small gaps/seams,
+whether parts precisely touch, minor overlap/clipping, or absolute scale (a separate
+geometric verifier handles those). Only flag placement when it is obviously wrong.
+Do not suggest code fixes or specific numbers.
 
 Output as a JSON array of issues (empty array [] if the design looks good):

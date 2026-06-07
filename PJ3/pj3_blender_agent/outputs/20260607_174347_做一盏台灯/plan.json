@@ -1,0 +1,104 @@
+{
+  "object_name": "Chinese Table Lamp",
+  "object_name_zh": "中式台灯",
+  "description_en": "A traditional Chinese style table lamp featuring a dark wooden circular base, slender central stem, tapered fabric shade with wooden trim rings, and decorative finial",
+  "components": [
+    {
+      "name": "base",
+      "description": "Circular wooden base plate",
+      "approx_size_m": "0.16 x 0.16 x 0.05",
+      "count": 1,
+      "position_note": "bottom, sits on table",
+      "shape": "cylinder"
+    },
+    {
+      "name": "stem",
+      "description": "Central vertical support pole",
+      "approx_size_m": "0.025 x 0.025 x 0.35",
+      "count": 1,
+      "position_note": "centered on top of base",
+      "shape": "cylinder"
+    },
+    {
+      "name": "bulb_socket",
+      "description": "Metal lamp socket holding the bulb",
+      "approx_size_m": "0.03 x 0.03 x 0.04",
+      "count": 1,
+      "position_note": "top of stem, partially inside shade",
+      "shape": "cylinder"
+    },
+    {
+      "name": "light_bulb",
+      "description": "Glass light bulb",
+      "approx_size_m": "0.05 x 0.05 x 0.05",
+      "count": 1,
+      "position_note": "inside socket, center of shade",
+      "shape": "sphere"
+    },
+    {
+      "name": "shade_fabric",
+      "description": "Tapered silk or paper lampshade",
+      "approx_size_m": "0.22 x 0.22 x 0.18",
+      "count": 1,
+      "position_note": "above base, surrounds bulb, bottom diameter 0.22m top 0.12m",
+      "shape": "cone"
+    },
+    {
+      "name": "shade_bottom_ring",
+      "description": "Wooden trim ring at bottom of shade",
+      "approx_size_m": "0.23 x 0.23 x 0.02",
+      "count": 1,
+      "position_note": "bottom edge of shade fabric",
+      "shape": "torus"
+    },
+    {
+      "name": "shade_top_ring",
+      "description": "Wooden trim ring at top of shade",
+      "approx_size_m": "0.13 x 0.13 x 0.02",
+      "count": 1,
+      "position_note": "top edge of shade fabric",
+      "shape": "torus"
+    },
+    {
+      "name": "finial",
+      "description": "Decorative top knob holding shade",
+      "approx_size_m": "0.025 x 0.025 x 0.025",
+      "count": 1,
+      "position_note": "top center of shade, above top ring",
+      "shape": "sphere"
+    }
+  ],
+  "connections": [
+    [
+      "base",
+      "stem"
+    ],
+    [
+      "stem",
+      "bulb_socket"
+    ],
+    [
+      "bulb_socket",
+      "light_bulb"
+    ],
+    [
+      "bulb_socket",
+      "shade_bottom_ring"
+    ],
+    [
+      "shade_bottom_ring",
+      "shade_fabric"
+    ],
+    [
+      "shade_fabric",
+      "shade_top_ring"
+    ],
+    [
+      "shade_top_ring",
+      "finial"
+    ]
+  ],
+  "overall_dimensions_m": "0.23 x 0.23 x 0.60",
+  "style_notes": "Traditional Ming/Qing style aesthetics. Base crafted from dark hardwood (zitan or hongmu) with optional low-relief cloud or key-fret carvings on side surface. Stem proportionally slender (height 7x diameter). Shade in natural rice paper or pale silk with subtle texture, held by matching dark wood rings. Finial in brass or gold-toned metal with simple spherical or melon-seed shape. Overall proportions elegant with shade diameter 1.4x base diameter, total height approximately 2.5x shade diameter.",
+  "estimated_difficulty": "medium"
+}

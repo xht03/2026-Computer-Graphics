@@ -1,1 +1,5 @@
 .env
+
+# bpy API-RAG embedding cache (binary, regenerated from bpy_api.jsonl on first use)
+*.npy
+bpy_api_emb.meta

@@ -13,13 +13,45 @@ KIMI_MODEL    = "kimi-k2.5"
 
 
 class FixerAgent:
-    def __init__(self, model: str = KIMI_MODEL, verbose: bool = False):
+    def __init__(self, model: str = KIMI_MODEL, verbose: bool = False, use_api_rag: bool = True):
         self.client = OpenAI(
             api_key=os.getenv("KIMI_API_KEY"),
             base_url=KIMI_BASE_URL,
         )
         self.model = model
         self.verbose = verbose
+        self._api_rag = None
+        if use_api_rag:
+            try:
+                from agents.api_rag import ApiDocRetriever
+                self._api_rag = ApiDocRetriever()
+            except Exception:
+                self._api_rag = None
+
+    def _retrieve_api_docs(self, issues: list[dict]) -> str:
+        """For runtime crashes, fetch exact API signatures/sockets for the error."""
+        if self._api_rag is None:
+            return ""
+        # Only error-severity messages (tracebacks) carry useful API signal.
+        err_text = "\n".join(
+            i.get("message", "") for i in issues if i.get("severity") == "error"
+        )
+        if not err_text.strip():
+            return ""
+        try:
+            chunks = self._api_rag.retrieve_for_error(err_text, top_k=4)
+        except Exception:
+            return ""
+        block = self._api_rag.as_prompt_block(
+            chunks,
+            "\nAPI REFERENCE (exact signatures from THIS Blender — trust over memory):",
+        )
+        if block and self.verbose:
+            print(f"\n  ┌── Fixer API-RAG ({len(chunks)} chunk(s)) ─────────────────")
+            for c in chunks:
+                print(f"  │  {c.splitlines()[0]}")
+            print(f"  └─────────────────────────────────────────────────────────────\n")
+        return block
 
     def fix(self, code: str, issues: list[dict]) -> str:
         """Return corrected bpy code. Issues come from VLM critic and/or geom verifier."""
@@ -44,11 +76,14 @@ class FixerAgent:
                 print(f"  │  [{src}] {sev}{comp_str}: {msg}")
             print(f"  └─────────────────────────────────────────────────────────────\n")
 
+        api_docs = self._retrieve_api_docs(sorted_issues)
+
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
                 {"role": "system", "content": _FIXER_SYSTEM},
-                {"role": "user", "content": _FIXER_USER.format(code=code, issues=issues_text)},
+                {"role": "user", "content": _FIXER_USER.format(
+                    code=code, issues=issues_text, api_docs=api_docs)},
             ],
             temperature=1,
             max_tokens=16000,

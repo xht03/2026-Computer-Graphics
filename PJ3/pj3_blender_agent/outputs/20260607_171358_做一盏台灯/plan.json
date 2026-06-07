@@ -1,0 +1,136 @@
+{
+  "object_name": "Chinese Traditional Table Lamp",
+  "object_name_zh": "中式台灯",
+  "description_en": "A traditional Chinese style table lamp with carved wooden base, central brass or wood stem, fabric/paper conical shade with bamboo wire frames, and decorative finial. Features dark mahogany or black lacquer finish with classic proportions.",
+  "components": [
+    {
+      "name": "base_plate",
+      "description": "Circular wooden bottom base plate for stability",
+      "approx_size_m": "0.18 x 0.18 x 0.04",
+      "count": 1,
+      "position_note": "bottom of lamp, on table surface",
+      "shape": "cylinder"
+    },
+    {
+      "name": "base_pedestal",
+      "description": "Decorative carved wooden block, slightly narrower than base plate",
+      "approx_size_m": "0.12 x 0.12 x 0.08",
+      "count": 1,
+      "position_note": "centered on top of base_plate",
+      "shape": "cylinder"
+    },
+    {
+      "name": "central_stem",
+      "description": "Main vertical support pole running from base through shade to finial",
+      "approx_size_m": "0.03 x 0.03 x 0.40",
+      "count": 1,
+      "position_note": "centered on base_pedestal, rising vertically through shade",
+      "shape": "cylinder"
+    },
+    {
+      "name": "socket_cup",
+      "description": "Ceramic or brass lamp socket holding the bulb",
+      "approx_size_m": "0.04 x 0.04 x 0.06",
+      "count": 1,
+      "position_note": "attached to central_stem at ~0.20m from bottom",
+      "shape": "cylinder"
+    },
+    {
+      "name": "light_bulb",
+      "description": "Illumination bulb, spherical",
+      "approx_size_m": "0.06 x 0.06 x 0.06",
+      "count": 1,
+      "position_note": "inside socket_cup, centered within shade",
+      "shape": "sphere"
+    },
+    {
+      "name": "shade_support",
+      "description": "Small cylindrical collar on stem that supports the shade bottom ring",
+      "approx_size_m": "0.06 x 0.06 x 0.02",
+      "count": 1,
+      "position_note": "on central_stem at ~0.15m from bottom",
+      "shape": "cylinder"
+    },
+    {
+      "name": "shade_bottom_ring",
+      "description": "Bottom wire frame ring of the lampshade, bamboo or brass",
+      "approx_size_m": "torus major Ø0.25, minor Ø0.01",
+      "count": 1,
+      "position_note": "resting on shade_support, forming shade base",
+      "shape": "torus"
+    },
+    {
+      "name": "shade_top_ring",
+      "description": "Top wire frame ring of the lampshade, smaller diameter than bottom",
+      "approx_size_m": "torus major Ø0.15, minor Ø0.01",
+      "count": 1,
+      "position_note": "at top of shade_fabric, central_stem passes through center",
+      "shape": "torus"
+    },
+    {
+      "name": "shade_fabric",
+      "description": "Conical fabric or paper shade body between top and bottom rings",
+      "approx_size_m": "bottom Ø0.25, top Ø0.15, height 0.20",
+      "count": 1,
+      "position_note": "between shade_bottom_ring and shade_top_ring",
+      "shape": "cone"
+    },
+    {
+      "name": "finial",
+      "description": "Decorative top knob securing the shade",
+      "approx_size_m": "0.04 x 0.04 x 0.04",
+      "count": 1,
+      "position_note": "at top of central_stem, above shade_top_ring",
+      "shape": "sphere"
+    }
+  ],
+  "connections": [
+    [
+      "base_plate",
+      "base_pedestal"
+    ],
+    [
+      "base_pedestal",
+      "central_stem"
+    ],
+    [
+      "central_stem",
+      "socket_cup"
+    ],
+    [
+      "socket_cup",
+      "light_bulb"
+    ],
+    [
+      "central_stem",
+      "shade_support"
+    ],
+    [
+      "shade_support",
+      "shade_bottom_ring"
+    ],
+    [
+      "shade_bottom_ring",
+      "shade_fabric"
+    ],
+    [
+      "shade_fabric",
+      "shade_top_ring"
+    ],
+    [
+      "central_stem",
+      "shade_top_ring"
+    ],
+    [
+      "shade_top_ring",
+      "finial"
+    ],
+    [
+      "central_stem",
+      "finial"
+    ]
+  ],
+  "overall_dimensions_m": "0.25 x 0.25 x 0.52",
+  "style_notes": "Traditional Chinese craftsmanship: base_pedestal features carved cloud motifs or key-fret pattern (回纹) in relief; dark mahogany wood tone or black lacquer finish with subtle sheen; shade_fabric in rice paper or silk with hand-painted bamboo or landscape motifs (surface decal, not geometry); brass or aged bronze metal fittings; proportions follow classical stability with heavy base (~30% of total height); shade tapers gently with warm off-white material; finial may feature small jade or wood sphere detail. Avoid floating geometry—ensure central_stem is continuous through shade.",
+  "estimated_difficulty": "medium"
+}

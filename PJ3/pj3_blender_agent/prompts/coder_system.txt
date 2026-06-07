@@ -49,9 +49,52 @@ BPY API SAFETY — these are the real crash sources. Follow exactly.
 - Cube: primitive_cube_add(size=1, location=(x,y,z)); then obj.scale=(w,d,h).
   A size=1 cube scales to its full size, so scale = the real size in metres (2cm board -> scale.z=0.02).
 - Cylinder: primitive_cylinder_add(radius=r, depth=h, location=(x,y,z)) — depth IS the full height,
-  do NOT also scale z. Only "radius" exists; never write radius1=/radius2= (auto-stripped, breaks the part).
-  For a tapered (round) leg, use a plain cylinder; do not attempt a cone.
+  do NOT also scale z. A cylinder has ONLY "radius"; never write radius1=/radius2= on a cylinder
+  (auto-stripped, breaks the part). Use a cylinder for straight tubes/poles/discs.
+- Cone / frustum (truncated cone, 圆台): primitive_cone_add(radius1=<bottom_r>, radius2=<top_r>,
+  depth=h, location=(x,y,z)) — radius1 is the BOTTOM radius, radius2 the TOP. radius2=0 gives a
+  pointed cone; radius2>0 gives a frustum/圆台. This is the RIGHT primitive for lampshades, flared
+  bases, tapered legs/posts, necks and vase bodies — use it whenever a part widens or narrows along
+  its height. depth IS the full height; do NOT also scale z. (radius1/radius2 are valid ONLY here.)
 - For a part of height h sitting on the floor: location.z = h/2.
+
+[Bevel — soften razor edges] Real wood/stone parts are not razor-sharp. To chamfer
+the hard edges of a boxy part (tabletop, seat, frame, base block), add a Bevel
+modifier (no edit mode needed):
+    mod = obj.modifiers.new("Bevel", type='BEVEL')
+    mod.width = 0.004      # 2-6 mm reads naturally; keep < 1/4 of the part's thinnest dimension
+    mod.segments = 2
+Apply it only where it helps; skip very thin slats/panels where width would self-intersect.
+
+[Revolution bodies — vases, gourds, bulged posts, curved/flared shades, finials]
+For a part whose radius varies SMOOTHLY along its height (a curved profile, not a
+straight taper), lathe a profile with the Screw modifier, then BAKE it to real
+geometry. Follow this recipe EXACTLY:
+    import math
+    # Profile points (radius, z) bottom->top, in the X-Z plane (y stays 0).
+    # Start and end at radius 0 to close the body on the axis. radius MUST be >= 0.
+    prof = [(0.0, 0.0), (0.06, 0.0), (0.05, 0.10), (0.08, 0.18), (0.03, 0.26), (0.0, 0.28)]
+    verts = [(r, 0.0, z) for (r, z) in prof]
+    edges = [(i, i + 1) for i in range(len(verts) - 1)]
+    me = bpy.data.meshes.new("vase_mesh")
+    obj = bpy.data.objects.new("vase", me)
+    bpy.context.collection.objects.link(obj)
+    me.from_pydata(verts, edges, [])     # faces MUST be [] here — never pass faces (that is the crash source)
+    me.update()
+    sc = obj.modifiers.new("Screw", type='SCREW')
+    sc.axis = 'Z'; sc.angle = math.radians(360); sc.steps = 64; sc.use_merge_vertices = True
+    # Bake the modifier into a real mesh so geometry checks & render see true 3D verts:
+    _deg = bpy.context.evaluated_depsgraph_get()
+    obj.data = bpy.data.meshes.new_from_object(obj.evaluated_get(_deg))
+    obj.modifiers.clear()
+    obj.data.materials.append(<your_material>)
+- A continuously CURVED body (vase, gourd, porcelain belly, bulged baluster, a shade
+  with a curved profile) MUST be built as ONE lathed piece with this recipe. Do NOT
+  approximate a smooth curve by stacking several cones/frustums — that leaves visible
+  steps in the silhouette. Put many points in `prof` to make the curve smooth.
+- Use primitive_cone_add (simpler) only for a SINGLE straight taper/frustum; the
+  moment the profile curves, switch to the lathe. from_pydata is allowed ONLY in this
+  recipe and ONLY with faces=[]; do not use it to build faces.
 
 [Transforms] Compute each part's final size/position from your dimension variables and assign ONCE
 (obj.scale = (...), position via the add() location). Do NOT then nudge them incrementally
@@ -75,7 +118,8 @@ computed positions and disconnect parts. Keep all legs/posts vertical: no rotati
 [Forbidden — crash or break assembly]
 - math.cos / math.sin to position legs        -> use explicit corner coordinates ±lx, ±ly
 - bpy.ops.object.duplicate() / .select_by_type(...) / .move_to_cursor(...)  -> loop primitive_*_add instead
-- mesh.from_pydata(...)                        -> malformed data crashes
+- mesh.from_pydata(...) WITH FACES             -> malformed face indices crash; only use the
+                                                  lathe recipe above (verts+edges, faces=[])
 - obj.copy() then assigning .location          -> loop primitive_*_add instead
 - obj.location.rotate(...) / Vector.rotate((axis), angle)  -> wrong signature
 

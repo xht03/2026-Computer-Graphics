@@ -1,0 +1,104 @@
+{
+  "object_name": "traditional_chinese_table_lamp",
+  "object_name_zh": "中式台灯",
+  "description_en": "A traditional Chinese style table lamp with circular wooden base, slender central stem, cylindrical fabric shade with bamboo frame rings, and visible bulb socket. Designed in the aesthetic of a Ming dynasty scholar's desk lamp with clean proportions and natural materials.",
+  "components": [
+    {
+      "name": "base",
+      "description": "Circular weighted wooden base plate",
+      "approx_size_m": "0.20 x 0.20 x 0.04",
+      "count": 1,
+      "position_note": "bottom center, resting on table surface",
+      "shape": "cylinder"
+    },
+    {
+      "name": "stem",
+      "description": "Central vertical wooden pole, smooth or with subtle bamboo-node turning",
+      "approx_size_m": "0.03 x 0.03 x 0.40",
+      "count": 1,
+      "position_note": "centered on top of base, rising vertically through shade center",
+      "shape": "cylinder"
+    },
+    {
+      "name": "socket",
+      "description": "Metal bulb socket and holder assembly",
+      "approx_size_m": "0.04 x 0.04 x 0.06",
+      "count": 1,
+      "position_note": "top end of stem, inside upper portion of shade",
+      "shape": "cylinder"
+    },
+    {
+      "name": "bulb",
+      "description": "Glass light bulb envelope",
+      "approx_size_m": "0.06 x 0.06 x 0.08",
+      "count": 1,
+      "position_note": "inserted into socket, centered within shade",
+      "shape": "sphere"
+    },
+    {
+      "name": "shade",
+      "description": "Cylindrical fabric lampshade, rice paper or silk texture",
+      "approx_size_m": "0.25 x 0.25 x 0.22",
+      "count": 1,
+      "position_note": "surrounding bulb and upper stem, bottom rim at approximately 0.20m height",
+      "shape": "cylinder"
+    },
+    {
+      "name": "shade_frame_top",
+      "description": "Top bamboo or wood support ring of lampshade",
+      "approx_size_m": "0.25 diameter x 0.02 thick",
+      "count": 1,
+      "position_note": "upper rim of shade, top edge",
+      "shape": "torus"
+    },
+    {
+      "name": "shade_frame_bottom",
+      "description": "Bottom bamboo or wood support ring of lampshade",
+      "approx_size_m": "0.25 diameter x 0.02 thick",
+      "count": 1,
+      "position_note": "lower rim of shade, resting on shade support attached to stem",
+      "shape": "torus"
+    },
+    {
+      "name": "finial",
+      "description": "Decorative wooden knob securing shade top",
+      "approx_size_m": "0.04 x 0.04 x 0.04",
+      "count": 1,
+      "position_note": "centered on top of shade frame, screwing onto stem top",
+      "shape": "sphere"
+    }
+  ],
+  "connections": [
+    [
+      "base",
+      "stem"
+    ],
+    [
+      "stem",
+      "socket"
+    ],
+    [
+      "socket",
+      "bulb"
+    ],
+    [
+      "stem",
+      "shade_frame_bottom"
+    ],
+    [
+      "shade_frame_bottom",
+      "shade"
+    ],
+    [
+      "shade",
+      "shade_frame_top"
+    ],
+    [
+      "shade_frame_top",
+      "finial"
+    ]
+  ],
+  "overall_dimensions_m": "0.25 x 0.25 x 0.50",
+  "style_notes": "Ming-style scholar's lamp aesthetic: base should be dark hardwood (zitan or hongmu tone) with possible subtle cloud-pattern carving on side edges (represented via texture, not geometry); stem should be slender and elegant, possibly with one or two raised bamboo-node rings; shade is natural rice paper or ivory silk with warm translucent quality; bamboo frame rings should be visible through shade material; brass or dark bronze socket hardware; avoid ornate decoration, favoring restrained literati elegance; proportions follow golden ratio with stem height roughly 3x base height",
+  "estimated_difficulty": "medium"
+}

@@ -14,7 +14,8 @@ Output ONLY valid JSON (no markdown, no extra text) with this schema:
       "approx_size_m": "<width x depth x height in meters>",
       "count": <how many of this part>,
       "position_note": "<where it sits, e.g. 'four corners of tabletop underside'>",
-      "shape": "<cube|cylinder|torus|plane|custom>"
+      "shape": "<cube|cylinder|cone|torus|sphere|plane|curve|custom>",
+      "part_of": "<optional: name of the parent assembly this belongs to, e.g. 'shade'. Omit for top-level parts.>"
     }
   ],
   "connections": [["part_a", "part_b"], ...],
@@ -41,6 +42,31 @@ COMPONENT RULES (what counts as a component):
 - EXCLUDE surface decoration. Carvings, fretwork/openwork patterns, inlay (镶嵌),
   gilding, paint, engraving, and textures are NOT components — never list them in
   "components". Describe them in "style_notes" instead.
+
+DECOMPOSITION GRANULARITY (do NOT under-decompose — this is critical):
+- A real object is rarely 3 plain blocks. Break each functional assembly into the
+  actual structural sub-parts a craftsman would build separately, then group them
+  with "part_of". A coarse 3-part plan is almost always WRONG.
+- Choose the SHAPE that matches reality, not just cube/cylinder:
+    * tapered / flared / conical body, OR a truncated cone (圆台) -> "cone"
+      (a 圆台 is just a cone given two radii: wide bottom, narrow top)
+    * ball / knob / finial -> "sphere"
+    * rim / ring / collar / foot-ring -> "torus"
+    * a genuinely curved profile (vase belly, bent rail) -> "curve"
+- A single body with a smoothly CURVED silhouette (a vase, gourd, porcelain body, a
+  bulged baluster, a curved lampshade) is ONE component with shape "curve" — do NOT
+  slice it into a vertical stack of rings/segments (foot/lower/belly/shoulder/neck).
+  The coder will lathe it as one smooth piece. Only split off parts that are truly
+  separate (e.g. a lid, two handles, a foot ring of different material).
+- Aim for roughly 6-12 components for a typical object (more for complex ones),
+  as long as each is a genuine separable solid — never a carved-on motif.
+- Things primitives cannot model (organic carvings, openwork, engraved motifs)
+  are NOT components; describe them in "style_notes".
+- FUNCTIONAL PARTS (soft rule): for lamps, lanterns, appliances and similar
+  functional objects, also include the essential working parts that make it that
+  object — e.g. a lamp needs a bulb (sphere) and a socket/holder (cylinder) — even
+  if they end up mostly hidden inside a shade. Model them as simple solids. Skip
+  this only when the part has no plausible simple-solid form.
 
 ASSEMBLY RULES (no floating parts):
 - The components must form ONE physically connected assembly. No part may float.

@@ -23,12 +23,14 @@ _BAD_LINE_PATTERNS = [
     re.compile(r"bpy\.ops\.object\.move_to_cursor"),
     re.compile(r"bpy\.ops\.object\.select_by_type"),
     re.compile(r"bpy\.ops\.object\.duplicate\(\)"),
-    re.compile(r"radius1\s*="),                        # primitive_cylinder_add 不支持 radius1 参数
-    re.compile(r"radius2\s*="),
+    # cylinder 不支持 radius1/radius2（只有 radius）；但 cone 合法使用它们做圆台，故仅拦 cylinder 行。
+    re.compile(r"cylinder_add.*radius1\s*="),
+    re.compile(r"cylinder_add.*radius2\s*="),
     re.compile(r"\.location\.rotate\("),               # Vector.rotate() 用法错误
     re.compile(r"\.rotate\(\s*\("),                    # rotate((轴), 角度) —— 签名错误
     re.compile(r"use_nodes\s*=\s*False"),              # 禁止关闭节点，否则材质失效
-    re.compile(r"\.from_pydata\("),                    # 顶点数据格式错误时必然崩溃
+    # 注：from_pydata 曾被全面禁用，但 lathe/回转体 recipe 需要它建轮廓线。
+    # 现仅靠 prompt 约束（faces 必须为 []，只用于 screw 轮廓）来防崩，不再正则拦截。
     re.compile(r"primitive_cube_add\s*\(.*size\s*=\s*0\."), # size=0.x 会生成微型方块，应为 size=1
     # 循环内对创建后物体的 scale/location 累加操作（"弯腿"反模式）。
     # 会破坏 leg_h = TH - top_t 的不变量，导致桌腿与桌面脱节。
@@ -66,26 +68,30 @@ class CoderAgent:
         self._system = _load_prompt("coder_system.txt")
         self._user_tmpl = _load_prompt("coder_user.txt")
 
-    def generate(self, description: str, rag_snippets: list[str] | None = None) -> str:
+    def generate(self, description: str, api_docs: list[str] | None = None) -> str:
         """为给定的 *description* 生成 bpy 代码。
 
         Args:
             description: 自然语言物体描述（中文或英文均可）。
-            rag_snippets: 可选，RAG 检索到的 bpy 代码示例列表。
+            api_docs: 可选，针对计划用到的高级构造检索到的 bpy API 文档片段
+                      （来自 ApiDocRetriever，内省本机 Blender 的精确签名/socket）。
 
         Returns:
             可直接执行的 bpy Python 代码字符串。
         """
-        if rag_snippets:
-            rag_block = "Here are relevant bpy code examples for reference:\n\n"
-            for i, snippet in enumerate(rag_snippets, 1):
-                rag_block += f"--- Example {i} ---\n{snippet}\n\n"
+        if api_docs:
+            api_block = (
+                "Blender API reference for THIS version — use these EXACT "
+                "signatures, parameters, and socket/property names:\n\n"
+                + "\n\n".join(api_docs)
+                + "\n"
+            )
         else:
-            rag_block = ""
+            api_block = ""
 
         user_msg = self._user_tmpl.format(
             description=description,
-            rag_context=rag_block,
+            api_docs=api_block,
         )
 
         response = self.client.chat.completions.create(

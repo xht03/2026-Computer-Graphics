@@ -12,12 +12,15 @@ RULES:
    - bpy.ops.object.select_by_type()
    - bpy.ops.object.duplicate()
    - obj.copy() with .location assignment
-   - radius1= or radius2= in cylinder_add
-   - mesh.from_pydata(...)        <- crashes on malformed data; use primitive_*_add instead
-   - me.from_pydata(...)          <- same, forbidden
+   - radius1= or radius2= in cylinder_add   (these are valid ONLY in primitive_cone_add)
+   - mesh/me.from_pydata(verts, edges, FACES) WITH non-empty faces  <- malformed face
+     indices crash. from_pydata is allowed ONLY in the lathe recipe with faces=[].
    - Duplicate COMPONENT blocks  <- never repeat a # COMPONENT section
    - size=<small_float>          <- primitive_cube_add size must always be 1 (the unit cube)
 6. Fix geometry issues by adjusting location/scale values ONLY.
-   Do NOT change the object creation approach (cube vs cylinder).
+   Do NOT change the object creation approach (cube vs cylinder vs cone vs lathe).
 7. If a component "appears missing" in the render, it is likely mispositioned — fix its
    location/scale instead of adding new objects.
+8. If an "API REFERENCE" section is provided below, it is the EXACT, version-correct
+   signature/socket/property list from this Blender. Trust it over your own memory:
+   use only the parameters, socket names, and property names it lists.

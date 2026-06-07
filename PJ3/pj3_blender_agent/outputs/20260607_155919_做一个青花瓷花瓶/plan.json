@@ -1,0 +1,68 @@
+{
+  "object_name": "blue_and_white_porcelain_vase",
+  "object_name_zh": "青花瓷双耳瓶",
+  "description_en": "Chinese Ming-style blue and white porcelain vase (double-eared form) with a smooth, glossy glazed surface and underglaze cobalt blue decoration",
+  "components": [
+    {
+      "name": "vase_body",
+      "description": "main bulbous porcelain body with tapered foot and flared rim, formed by revolving a curved profile",
+      "approx_size_m": "0.22 x 0.22 x 0.38",
+      "count": 1,
+      "position_note": "center of object, vertical axis",
+      "shape": "curve"
+    },
+    {
+      "name": "foot_ring",
+      "description": "un-glazed ceramic foot ring at the base, slightly wider than the body bottom",
+      "approx_size_m": "0.10 x 0.10 x 0.02",
+      "count": 1,
+      "position_note": "underside center of body base",
+      "shape": "torus"
+    },
+    {
+      "name": "rim_ring",
+      "description": "thickened lip ring at the opening",
+      "approx_size_m": "0.08 x 0.08 x 0.015",
+      "count": 1,
+      "position_note": "top edge of body opening",
+      "shape": "torus"
+    },
+    {
+      "name": "left_handle",
+      "description": "ear-shaped loop handle connecting shoulder to neck",
+      "approx_size_m": "0.06 x 0.02 x 0.09",
+      "count": 1,
+      "position_note": "left side of body at shoulder height",
+      "shape": "curve"
+    },
+    {
+      "name": "right_handle",
+      "description": "ear-shaped loop handle connecting shoulder to neck",
+      "approx_size_m": "0.06 x 0.02 x 0.09",
+      "count": 1,
+      "position_note": "right side of body at shoulder height",
+      "shape": "curve"
+    }
+  ],
+  "connections": [
+    [
+      "vase_body",
+      "foot_ring"
+    ],
+    [
+      "vase_body",
+      "rim_ring"
+    ],
+    [
+      "vase_body",
+      "left_handle"
+    ],
+    [
+      "vase_body",
+      "right_handle"
+    ]
+  ],
+  "overall_dimensions_m": "0.22 x 0.22 x 0.38",
+  "style_notes": "Classic blue-and-white (qinghua) porcelain: white kaolin body with cobalt oxide painted decoration depicting scrolling lotus or landscape scenes, covered by transparent high-gloss glaze. The foot ring remains un-glazed to prevent sticking during firing. Handles follow the 'double-ear' (shuang'er) form typical of Ming dynasty altar vases. Proportions follow the 3:2 height-to-belly-width ratio.",
+  "estimated_difficulty": "medium"
+}

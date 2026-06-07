@@ -1,0 +1,80 @@
+{
+  "object_name": "Blue and White Porcelain Vase",
+  "object_name_zh": "青花瓷花瓶",
+  "description_en": "A traditional Chinese blue-and-white porcelain vase (Qinghua) with a bulbous belly, tapering shoulder, narrow neck, and flared rim. Features the classic underglaze cobalt-blue decoration style on a white porcelain body.",
+  "components": [
+    {
+      "name": "foot_ring",
+      "description": "The base ring (圈足) providing stable footing",
+      "approx_size_m": "0.12 x 0.12 x 0.02",
+      "count": 1,
+      "position_note": "bottom of the vase, flat on ground",
+      "shape": "torus"
+    },
+    {
+      "name": "lower_body",
+      "description": "Lower trunk tapering outward from foot to belly",
+      "approx_size_m": "0.20 x 0.20 x 0.10",
+      "count": 1,
+      "position_note": "sitting atop the foot ring, bottom diameter 0.10m, top diameter 0.20m",
+      "shape": "cone"
+    },
+    {
+      "name": "belly",
+      "description": "The bulbous midsection (腹), widest part of the vessel",
+      "approx_size_m": "0.20 x 0.20 x 0.20",
+      "count": 1,
+      "position_note": "center of the vase, equator aligned with top of lower_body",
+      "shape": "sphere"
+    },
+    {
+      "name": "shoulder",
+      "description": "Tapering section from belly to neck (肩)",
+      "approx_size_m": "0.20 x 0.20 x 0.10",
+      "count": 1,
+      "position_note": "above belly, bottom diameter 0.20m, top diameter 0.06m",
+      "shape": "cone"
+    },
+    {
+      "name": "neck",
+      "description": "Narrow cylindrical neck (颈)",
+      "approx_size_m": "0.06 x 0.06 x 0.10",
+      "count": 1,
+      "position_note": "above shoulder, vertical tube",
+      "shape": "cylinder"
+    },
+    {
+      "name": "rim",
+      "description": "Flared lip (口沿) at the opening",
+      "approx_size_m": "0.10 x 0.10 x 0.02",
+      "count": 1,
+      "position_note": "top of neck, flared outward",
+      "shape": "torus"
+    }
+  ],
+  "connections": [
+    [
+      "foot_ring",
+      "lower_body"
+    ],
+    [
+      "lower_body",
+      "belly"
+    ],
+    [
+      "belly",
+      "shoulder"
+    ],
+    [
+      "shoulder",
+      "neck"
+    ],
+    [
+      "neck",
+      "rim"
+    ]
+  ],
+  "overall_dimensions_m": "0.20 x 0.20 x 0.42",
+  "style_notes": "Classic Qinghua (blue-and-white) style: White porcelain body with painted cobalt-blue underglaze decoration. Typical decorative bands: wave or lotus-petal pattern at the base, main motif (dragons, phoenix, or scrolling lotus) on the belly, cloud-collar pattern at the shoulder, and bamboo or ruyi motifs on the neck. Surface is high-gloss glazed ceramic. No carved relief; all decoration is flat painted pigment under the clear glaze. Proportions follow the 'upper smaller than lower' (上小下大) rule for stability.",
+  "estimated_difficulty": "medium"
+}

@@ -5,7 +5,7 @@ Main pipeline entry point.
 Usage:
     python main.py "a red cube"
     python main.py "做一张明式案几" --iterations 3 --vlm --geom
-    python main.py "长凳" --rag --iterations 2
+    python main.py "长凳" --iterations 2
 """
 import argparse
 import json
@@ -22,7 +22,7 @@ load_dotenv(".env.example")
 from agents.coder import CoderAgent
 from agents.planner import PlannerAgent
 from agents.fixer import FixerAgent
-from agents.rag import RAGRetriever
+from agents.api_rag import ApiDocRetriever
 from blender.render import build_render_script
 from blender.runner import run_script
 
@@ -105,7 +105,6 @@ def _blender_run(
 def pipeline(
     description: str,
     use_planner: bool = True,
-    use_rag: bool = False,
     max_iterations: int = 1,
     use_vlm: bool = False,
     use_geom: bool = False,
@@ -122,7 +121,7 @@ def pipeline(
     print(f"  Description : {description}")
     print(f"  Output dir  : {run_dir}")
     print(f"  VLM critic  : {use_vlm}  |  Geom verifier: {use_geom}")
-    print(f"  Max iters   : {max_iterations}  |  RAG: {use_rag}")
+    print(f"  Max iters   : {max_iterations}")
     print(f"{'='*60}\n")
 
     # ── Step 1: Plan ──────────────────────────────────────────────
@@ -139,18 +138,17 @@ def pipeline(
         print(f"  → Plan: {plan.get('object_name', description)}")
         print(f"     Components: {[c['name'] for c in plan.get('components', [])]}")
 
-    # ── Step 2: RAG retrieval ─────────────────────────────────────
-    rag_snippets = []
-    if use_rag:
-        print("[2/N] RAG retrieval...")
-        rag = RAGRetriever()
-        rag_snippets = rag.retrieve(coder_desc, top_k=3)
-        print(f"  → Retrieved {len(rag_snippets)} snippet(s)")
+    # ── Step 2: API-doc retrieval (plan-driven, targeted) ─────────
+    api_docs = []
+    print("[2/N] API-doc retrieval...")
+    api_rag = ApiDocRetriever()
+    api_docs = api_rag.retrieve_for_plan(plan)
+    print(f"  → Retrieved {len(api_docs)} API ref(s)")
 
     # ── Step 3: Initial code generation ──────────────────────────
     print("[3/N] Generating bpy code...")
     coder = CoderAgent()
-    code = coder.generate(coder_desc, rag_snippets=rag_snippets or None)
+    code = coder.generate(coder_desc, api_docs=api_docs or None)
     _save_code(code, os.path.join(run_dir, "code_v0.py"))
     print(f"  → Code generated ({len(code)} chars)")
 
@@ -252,7 +250,6 @@ def main():
     parser = argparse.ArgumentParser(description="PJ3 Blender Agent")
     parser.add_argument("description", help="Object description (Chinese or English)")
     parser.add_argument("--no-planner", action="store_true", help="Skip planner step")
-    parser.add_argument("--rag", action="store_true", help="Enable RAG retrieval (Day 5)")
     parser.add_argument("--iterations", type=int, default=1, help="Max critic-fixer iterations")
     parser.add_argument("--vlm", action="store_true", help="Enable VLM critic (Day 3)")
     parser.add_argument("--geom", action="store_true", help="Enable geometry verifier (Day 4)")
@@ -262,7 +259,6 @@ def main():
     result = pipeline(
         description=args.description,
         use_planner=not args.no_planner,
-        use_rag=args.rag,
         max_iterations=args.iterations,
         use_vlm=args.vlm,
         use_geom=args.geom,

@@ -1,0 +1,116 @@
+{
+  "object_name": "Chinese Traditional Table Lamp",
+  "object_name_zh": "中式台灯",
+  "description_en": "A traditional Chinese desk lamp with wooden base and stem, fabric shade with wooden top and bottom rings, and spherical finial. Style features dark hardwood construction with subtle turned details on the stem.",
+  "components": [
+    {
+      "name": "base",
+      "description": "Circular weighted base, solid wood",
+      "approx_size_m": "0.20 x 0.20 x 0.05",
+      "count": 1,
+      "position_note": "bottom of lamp",
+      "shape": "cylinder"
+    },
+    {
+      "name": "stem",
+      "description": "Central support pillar, cylindrical",
+      "approx_size_m": "0.04 x 0.04 x 0.28",
+      "count": 1,
+      "position_note": "centered on top of base",
+      "shape": "cylinder"
+    },
+    {
+      "name": "socket_holder",
+      "description": "Transition disk between stem and socket, supports shade frame",
+      "approx_size_m": "0.08 x 0.08 x 0.02",
+      "count": 1,
+      "position_note": "top of stem",
+      "shape": "cylinder"
+    },
+    {
+      "name": "socket",
+      "description": "Bulb socket/holder, brass or ceramic insert",
+      "approx_size_m": "0.03 x 0.03 x 0.04",
+      "count": 1,
+      "position_note": "centered on socket_holder, inside shade",
+      "shape": "cylinder"
+    },
+    {
+      "name": "bulb",
+      "description": "Light bulb, glass sphere",
+      "approx_size_m": "0.05 x 0.05 x 0.05",
+      "count": 1,
+      "position_note": "inside socket, centered within shade cavity",
+      "shape": "sphere"
+    },
+    {
+      "name": "shade_bottom_ring",
+      "description": "Wooden bottom ring of lampshade frame",
+      "approx_size_m": "0.25 x 0.25 x 0.02",
+      "count": 1,
+      "position_note": "resting on socket_holder, outer edge of shade",
+      "shape": "torus"
+    },
+    {
+      "name": "shade_top_ring",
+      "description": "Wooden top ring of lampshade frame, smaller diameter",
+      "approx_size_m": "0.18 x 0.18 x 0.02",
+      "count": 1,
+      "position_note": "top of shade, 0.20m above bottom ring",
+      "shape": "torus"
+    },
+    {
+      "name": "shade_diffuser",
+      "description": "Fabric or parchment shade body, truncated cone shape",
+      "approx_size_m": "0.25 x 0.25 x 0.20",
+      "count": 1,
+      "position_note": "between shade_bottom_ring and shade_top_ring",
+      "shape": "cone"
+    },
+    {
+      "name": "finial",
+      "description": "Decorative knob on top of shade",
+      "approx_size_m": "0.04 x 0.04 x 0.04",
+      "count": 1,
+      "position_note": "centered on top of shade_top_ring",
+      "shape": "sphere"
+    }
+  ],
+  "connections": [
+    [
+      "base",
+      "stem"
+    ],
+    [
+      "stem",
+      "socket_holder"
+    ],
+    [
+      "socket_holder",
+      "socket"
+    ],
+    [
+      "socket_holder",
+      "shade_bottom_ring"
+    ],
+    [
+      "shade_bottom_ring",
+      "shade_diffuser"
+    ],
+    [
+      "shade_diffuser",
+      "shade_top_ring"
+    ],
+    [
+      "shade_top_ring",
+      "finial"
+    ],
+    [
+      "socket",
+      "bulb"
+    ]
+  ],
+  "overall_dimensions_m": "0.25 x 0.25 x 0.55",
+  "style_notes": "Traditional Chinese joinery with mortise-tenon connections for wooden parts; base and stem in dark hardwood (zitan or hongmu) with subtle lathe-turned bamboo-node detailing on stem; shade frame in matching wood; shade surface in rice paper or silk with possible ink-wash landscape or calligraphy motifs (surface texture, not geometry); brass hardware at socket; proportions follow 0.6 leg-to-total ratio for vertical elements.",
+  "estimated_difficulty": "medium"
+}

@@ -2,6 +2,12 @@ I generated a 3D model of: {description}
 
 The images show 4 rendered views: front, side, top, and isometric (45°).
 
-Identify all structural and geometric problems visible in the images. Describe what is visually wrong — do NOT suggest code fixes or specific values.
+Critique the DESIGN of this model: proportion & balance, style fidelity to the
+description, design richness, symmetry, material/colour, missing or extra parts,
+and whether the overall shape reads as the intended object.
 
-Output as JSON array of issues:
+Remember: do NOT report gaps, contact, floating, clipping/interpenetration, or
+absolute scale — a separate geometric verifier already handles those. Do not
+suggest code fixes or specific numbers.
+
+Output as a JSON array of issues (empty array [] if the design looks good):

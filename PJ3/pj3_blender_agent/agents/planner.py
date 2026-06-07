@@ -2,16 +2,22 @@ import json
 import os
 import re
 from pathlib import Path
-from zhipuai import ZhipuAI
+from openai import OpenAI
 
 _PROMPT_DIR = Path(__file__).parent.parent / "prompts"
+
+KIMI_BASE_URL = "https://api.moonshot.cn/v1"
+KIMI_MODEL = "kimi-k2.5"
 
 
 class PlannerAgent:
     """Decomposes a user description into a structured JSON task plan."""
 
-    def __init__(self, model: str = "glm-4-flash"):
-        self.client = ZhipuAI(api_key=os.getenv("GLM_API_KEY"))
+    def __init__(self, model: str = KIMI_MODEL):
+        self.client = OpenAI(
+            api_key=os.getenv("KIMI_API_KEY"),
+            base_url=KIMI_BASE_URL,
+        )
         self.model = model
         self._system = (_PROMPT_DIR / "planner_system.txt").read_text(encoding="utf-8")
 
@@ -23,13 +29,17 @@ class PlannerAgent:
                 {"role": "system", "content": self._system},
                 {"role": "user", "content": f"Plan the 3D modeling task for: {description}"},
             ],
-            temperature=0.1,
-            max_tokens=1024,
+            temperature=1,
+            max_tokens=16000,
         )
         raw = response.choices[0].message.content.strip()
         # Strip markdown fences if present
         raw = re.sub(r"^```(?:json)?\n?", "", raw, flags=re.MULTILINE)
         raw = re.sub(r"\n?```$", "", raw, flags=re.MULTILINE)
+        # Reasoning models may wrap the JSON in prose; isolate the outermost object.
+        _start, _end = raw.find("{"), raw.rfind("}")
+        if _start != -1 and _end > _start:
+            raw = raw[_start : _end + 1]
         try:
             return json.loads(raw)
         except json.JSONDecodeError:
@@ -64,11 +74,14 @@ class PlannerAgent:
                 pos = c.get("position_note", "")
                 shape = c.get("shape", "cube")
                 desc = c.get("description", "")
+                part_of = c.get("part_of", "")
                 line = f"  - {c['name']} (x{count}, {shape}): {desc}"
                 if size:
                     line += f", size={size}"
                 if pos:
                     line += f", position: {pos}"
+                if part_of:
+                    line += f", part of: {part_of}"
                 lines.append(line)
 
         connections = plan.get("connections")

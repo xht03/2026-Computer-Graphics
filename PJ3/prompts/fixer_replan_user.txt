@@ -1,0 +1,9 @@
+Current bpy script:
+```python
+{code}
+```
+{plan_spec}
+{context}Structural changes to apply (apply ALL of them):
+{changes}
+{api_docs}
+Output the full corrected bpy script (raw Python only):

@@ -1,9 +1,0 @@
-Current bpy script:
-```python
-{code}
-```
-
-Issues to fix (address ALL of them):
-{issues}
-{api_docs}
-Output the corrected bpy script (raw Python only):

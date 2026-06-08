@@ -1,0 +1,15 @@
+The current modeling plan (JSON) is:
+{plan}
+
+The following STRUCTURAL problems were found in the rendered model. Each one
+requires changing the plan itself — adding or removing a component, or changing a
+part's basic shape — not just tweaking numbers:
+{issues}
+
+Revise the plan to fix these problems:
+- Keep every component, dimension, and note that is already correct UNCHANGED.
+- Add missing components, remove extra ones, or change a part's "shape" as needed.
+- Keep the SAME JSON schema and the same connection/no-floating-part rules.
+- Re-check "connections" so every component still touches at least one other part.
+
+Output ONLY the revised JSON plan (no markdown, no commentary).

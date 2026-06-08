@@ -178,13 +178,22 @@ class ApiDocRetriever:
                     order.append(i)
         return [self._entries[i]["text"] for i in order[:top_k]]
 
-    # Map a plan component's declared shape to a retrieval query for its construct.
+    # Map a plan component's declared shape to one or more retrieval queries. A
+    # "curve" part can be built two ways — a lathed Screw profile OR a hand-built
+    # Bezier spline — so it pulls docs for BOTH (the bezier query targets the new
+    # bpy.types.* data entries that carry the .co/handle arities).
     _SHAPE_QUERY = {
-        "cone": "primitive_cone_add cone frustum tapered radius1 radius2",
-        "torus": "primitive_torus_add torus ring",
-        "sphere": "primitive_uv_sphere_add sphere ball",
-        "curve": "ScrewModifier lathe revolve profile around axis",
-        "custom": "ScrewModifier lathe revolve profile around axis",
+        "cone": ["primitive_cone_add cone frustum tapered radius1 radius2"],
+        "torus": ["primitive_torus_add torus ring"],
+        "sphere": ["primitive_uv_sphere_add sphere ball"],
+        "curve": [
+            "ScrewModifier lathe revolve profile around axis",
+            "bpy.types.Curve Spline BezierSplinePoint splines.new bezier_points handle_left_type co bevel_depth",
+        ],
+        "custom": [
+            "ScrewModifier lathe revolve profile around axis",
+            "bpy.types.Curve Spline BezierSplinePoint splines.new bezier_points handle_left_type co bevel_depth",
+        ],
     }
 
     def retrieve_for_plan(self, plan: dict, top_k_per: int = 1, max_total: int = 6) -> list[str]:
@@ -201,8 +210,7 @@ class ApiDocRetriever:
         queries: list[str] = []
         shapes = {str(c.get("shape", "")).lower() for c in plan.get("components", [])}
         for s in shapes:
-            if s in self._SHAPE_QUERY:
-                queries.append(self._SHAPE_QUERY[s])
+            queries.extend(self._SHAPE_QUERY.get(s, []))
         notes = (str(plan.get("style_notes", "")) + " " + str(plan.get("description_en", ""))).lower()
         if any(k in notes for k in ("bevel", "chamfer", "rounded edge", "round edge", "soften")):
             queries.append("BevelModifier bevel chamfer edges segments width")

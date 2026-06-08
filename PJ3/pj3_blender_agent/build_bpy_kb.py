@@ -21,6 +21,16 @@ _OUT = os.path.join(os.path.dirname(__file__), "knowledge", "bpy_api.jsonl")
 # Operator namespaces we actually use when modeling furniture/objects.
 _OP_NAMESPACES = ["mesh", "object", "curve", "transform", "material"]
 
+# Data-API types the coder hand-writes (not via operators). These are the crash
+# hotspots operators don't cover: curve/spline construction (.co arity, handle
+# types) and raw mesh building. Introspecting their properties yields exact array
+# arities, e.g. "co (FLOAT[3])" — which is precisely the knowledge missing when a
+# model writes bezier_points[i].co = (x, y) instead of (x, y, z).
+_DATA_TYPES = [
+    "Curve", "Spline", "BezierSplinePoint", "SplinePoint",
+    "Mesh", "MeshVertex", "MeshPolygon",
+]
+
 # Shader nodes whose dynamic socket names matter (Principled is the crash hotspot).
 _SHADER_NODES = [
     "ShaderNodeBsdfPrincipled", "ShaderNodeOutputMaterial", "ShaderNodeTexNoise",
@@ -132,11 +142,40 @@ def build_shader_nodes(entries):
         tree.nodes.remove(node)
 
 
+def build_data_types(entries):
+    """Introspect hand-written data-API types (curve/spline/mesh) and emit their
+    properties, so retrieval can supply exact arities (e.g. BezierSplinePoint.co
+    is FLOAT[3]) that operator docs never cover."""
+    for tname in _DATA_TYPES:
+        rtype = getattr(bpy.types, tname, None)
+        if rtype is None:
+            continue
+        try:
+            props = [p for p in rtype.bl_rna.properties if p.identifier != "rna_type"]
+        except Exception:
+            continue
+        lines = [f"bpy.types.{tname}  (data API — set via Python, not operators)"]
+        tdesc = getattr(rtype.bl_rna, "description", "") or ""
+        if tdesc:
+            lines.append(f"  {tdesc}")
+        if props:
+            lines.append("  Properties:")
+            for p in props:
+                lines.append(f"    {_prop_str(p)}")
+        entries.append({
+            "name": f"bpy.types.{tname}",
+            "kind": "type",
+            "tags": f"data type {tname} spline bezier curve mesh point co",
+            "text": "\n".join(lines),
+        })
+
+
 def main():
     entries = []
     build_operators(entries)
     build_modifiers(entries)
     build_shader_nodes(entries)
+    build_data_types(entries)
 
     os.makedirs(os.path.dirname(_OUT), exist_ok=True)
     with open(_OUT, "w", encoding="utf-8") as f:

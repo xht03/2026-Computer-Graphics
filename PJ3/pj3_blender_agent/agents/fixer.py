@@ -7,21 +7,26 @@ _PROMPT_DIR = Path(__file__).parent.parent / "prompts"
 
 _FIXER_SYSTEM = (_PROMPT_DIR / "fixer_system.txt").read_text(encoding="utf-8")
 _FIXER_USER   = (_PROMPT_DIR / "fixer_user.txt").read_text(encoding="utf-8")
+_REPLAN_SYSTEM = (_PROMPT_DIR / "fixer_replan_system.txt").read_text(encoding="utf-8")
+_REPLAN_USER   = (_PROMPT_DIR / "fixer_replan_user.txt").read_text(encoding="utf-8")
 
 KIMI_BASE_URL = "https://api.moonshot.cn/v1"
 KIMI_MODEL    = "kimi-k2.5"
 
 
 class FixerAgent:
-    def __init__(self, model: str = KIMI_MODEL, verbose: bool = False, use_api_rag: bool = True):
+    def __init__(self, model: str = KIMI_MODEL, verbose: bool = False,
+                 use_api_rag: bool = True, api_rag=None):
         self.client = OpenAI(
             api_key=os.getenv("KIMI_API_KEY"),
             base_url=KIMI_BASE_URL,
         )
         self.model = model
         self.verbose = verbose
-        self._api_rag = None
-        if use_api_rag:
+        # Prefer a shared retriever so the embedding model is loaded only once per
+        # run; fall back to building our own only if none was passed in.
+        self._api_rag = api_rag
+        if self._api_rag is None and use_api_rag:
             try:
                 from agents.api_rag import ApiDocRetriever
                 self._api_rag = ApiDocRetriever()
@@ -98,6 +103,50 @@ class FixerAgent:
                 print(f"  │  ... ({len(raw.splitlines())} lines total)")
             print(f"  └─────────────────────────────────────────────────────────────\n")
 
+        return self._postprocess(raw, code)
+
+    def apply_plan_change(
+        self, code: str, changes: str, api_docs: list[str] | None = None
+    ) -> str:
+        """Incrementally patch the script to match a REVISED plan.
+
+        Unlike fix() (which only tweaks numbers and is forbidden from adding parts),
+        this mode is allowed to ADD / REMOVE / RESHAPE the specific components listed
+        in *changes*, while leaving all other code untouched. *changes* is the
+        ADD/REMOVE/CHANGE block from planner.summarize_plan_change.
+        """
+        if not changes.strip():
+            return code
+
+        if api_docs:
+            api_block = (
+                "\nAPI REFERENCE (exact signatures from THIS Blender — trust over memory):\n"
+                + "\n\n".join(api_docs) + "\n"
+            )
+        else:
+            api_block = ""
+
+        if self.verbose:
+            print(f"\n  ┌── Fixer(replan) structural changes ─────────────────────────")
+            for line in changes.splitlines():
+                print(f"  │  {line}")
+            print(f"  └─────────────────────────────────────────────────────────────\n")
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": _REPLAN_SYSTEM},
+                {"role": "user", "content": _REPLAN_USER.format(
+                    code=code, changes=changes, api_docs=api_block)},
+            ],
+            temperature=1,
+            max_tokens=16000,
+        )
+        raw = response.choices[0].message.content.strip()
+        return self._postprocess(raw, code)
+
+    def _postprocess(self, raw: str, original_code: str) -> str:
+        """Strip markdown fences, sanitize, and (verbose) print a diff summary."""
         raw = re.sub(r"^```(?:python)?\n?", "", raw, flags=re.MULTILINE)
         raw = re.sub(r"\n?```$", "", raw, flags=re.MULTILINE)
         from agents.coder import sanitize_bpy_code
@@ -106,7 +155,7 @@ class FixerAgent:
         if self.verbose:
             import difflib
             diff = list(difflib.unified_diff(
-                code.splitlines(), fixed.splitlines(),
+                original_code.splitlines(), fixed.splitlines(),
                 fromfile="before", tofile="after", lineterm=""
             ))
             added   = [l[1:] for l in diff if l.startswith("+") and not l.startswith("+++")]

@@ -179,8 +179,10 @@ class VLMCritic:
                 for item in data:
                     item.setdefault("source", "vlm")
                     item.setdefault("severity", "warning")
+                    item.setdefault("kind", "parameter")
                 return data
         except json.JSONDecodeError:
             if raw.strip():
-                return [{"source": "vlm", "severity": "warning", "message": raw.strip()}]
+                return [{"source": "vlm", "severity": "warning",
+                         "kind": "parameter", "message": raw.strip()}]
         return []

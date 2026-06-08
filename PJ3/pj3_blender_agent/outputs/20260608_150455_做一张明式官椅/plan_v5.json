@@ -1,0 +1,344 @@
+{
+  "object_name": "Ming Style Official Hat Chair",
+  "object_name_zh": "明式官帽椅",
+  "description_en": "Classic Ming dynasty yoke-back armchair (四出头官帽椅) with S-curved splat, protruding top rail resembling an official's hat, splayed legs with stretchers, and forward-protruding armrests supported by vertical front posts. Features minimal ornamentation and elegant proportions typical of scholarly furniture.",
+  "components": [
+    {
+      "name": "front_left_leg",
+      "description": "Front left support post, square section, splayed outward",
+      "approx_size_m": "0.04 x 0.04 x 0.52",
+      "count": 1,
+      "position_note": "front left corner, extends from floor to seat frame underside",
+      "shape": "cube"
+    },
+    {
+      "name": "front_right_leg",
+      "description": "Front right support post, square section, splayed outward",
+      "approx_size_m": "0.04 x 0.04 x 0.52",
+      "count": 1,
+      "position_note": "front right corner, extends from floor to seat frame underside",
+      "shape": "cube"
+    },
+    {
+      "name": "back_left_leg",
+      "description": "Back left post extending full height from floor to top rail, continuous piece",
+      "approx_size_m": "0.04 x 0.04 x 1.15",
+      "count": 1,
+      "position_note": "back left corner, extends from floor to support top rail",
+      "shape": "cube"
+    },
+    {
+      "name": "back_right_leg",
+      "description": "Back right post extending full height from floor to top rail, continuous piece",
+      "approx_size_m": "0.04 x 0.04 x 1.15",
+      "count": 1,
+      "position_note": "back right corner, extends from floor to support top rail",
+      "shape": "cube"
+    },
+    {
+      "name": "front_seat_rail",
+      "description": "Front horizontal frame member of the seat",
+      "approx_size_m": "0.55 x 0.04 x 0.04",
+      "count": 1,
+      "position_note": "front edge between front legs, at 0.52m height",
+      "shape": "cube"
+    },
+    {
+      "name": "back_seat_rail",
+      "description": "Back horizontal frame member of the seat",
+      "approx_size_m": "0.55 x 0.04 x 0.04",
+      "count": 1,
+      "position_note": "back edge between back legs, at 0.52m height",
+      "shape": "cube"
+    },
+    {
+      "name": "left_seat_rail",
+      "description": "Left side horizontal frame member connecting front and back rails",
+      "approx_size_m": "0.40 x 0.04 x 0.04",
+      "count": 1,
+      "position_note": "left edge between front and back rails",
+      "shape": "cube"
+    },
+    {
+      "name": "right_seat_rail",
+      "description": "Right side horizontal frame member connecting front and back rails",
+      "approx_size_m": "0.40 x 0.04 x 0.04",
+      "count": 1,
+      "position_note": "right edge between front and back rails",
+      "shape": "cube"
+    },
+    {
+      "name": "seat_panel",
+      "description": "Wooden seat board set within the frame",
+      "approx_size_m": "0.47 x 0.40 x 0.02",
+      "count": 1,
+      "position_note": "inset within the four seat rails, forming sitting surface",
+      "shape": "cube"
+    },
+    {
+      "name": "back_splat",
+      "description": "Central S-curved backrest panel (靠背板), thin vertical panel with elegant S-curve profile between seat and top rail",
+      "approx_size_m": "0.16 x 0.015 x 0.58",
+      "count": 1,
+      "position_note": "centered between back legs in the frontal plane, vertical panel connecting the center of back seat rail to the center of top rail between the back legs",
+      "shape": "curve"
+    },
+    {
+      "name": "top_rail",
+      "description": "Curved yoke-shaped top rail (搭脑) extending beyond back posts",
+      "approx_size_m": "0.60 x 0.06 x 0.08",
+      "count": 1,
+      "position_note": "across top of back legs, ends protrude backward like hat wings",
+      "shape": "curve"
+    },
+    {
+      "name": "left_gooseneck",
+      "description": "Vertical front post (鹅脖) rising from front left leg to support left armrest",
+      "approx_size_m": "0.04 x 0.04 x 0.20",
+      "count": 1,
+      "position_note": "front left, rising vertically from front_left_leg at 0.52m to left_armrest at 0.72m",
+      "shape": "cube"
+    },
+    {
+      "name": "right_gooseneck",
+      "description": "Vertical front post (鹅脖) rising from front right leg to support right armrest",
+      "approx_size_m": "0.04 x 0.04 x 0.20",
+      "count": 1,
+      "position_note": "front right, rising vertically from front_right_leg at 0.52m to right_armrest at 0.72m",
+      "shape": "cube"
+    },
+    {
+      "name": "left_armrest",
+      "description": "Left armrest rail (扶手) extending from back post over gooseneck, protruding forward",
+      "approx_size_m": "0.55 x 0.05 x 0.04",
+      "count": 1,
+      "position_note": "left side, from back left leg at 0.72m height forward over left gooseneck, end protrudes beyond support",
+      "shape": "curve"
+    },
+    {
+      "name": "right_armrest",
+      "description": "Right armrest rail (扶手) extending from back post over gooseneck, protruding forward",
+      "approx_size_m": "0.55 x 0.05 x 0.04",
+      "count": 1,
+      "position_note": "right side, from back right leg at 0.72m height forward over right gooseneck, end protrudes beyond support",
+      "shape": "curve"
+    },
+    {
+      "name": "front_apron",
+      "description": "Curved apron board under front seat rail",
+      "approx_size_m": "0.47 x 0.02 x 0.08",
+      "count": 1,
+      "position_note": "between front seat rail and front legs, beaded edge, front face flush with leg front faces",
+      "shape": "cube"
+    },
+    {
+      "name": "left_apron",
+      "description": "Left curved apron board under left seat rail",
+      "approx_size_m": "0.40 x 0.02 x 0.08",
+      "count": 1,
+      "position_note": "left side between left seat rail and legs, outer face flush with leg outer faces",
+      "shape": "cube"
+    },
+    {
+      "name": "right_apron",
+      "description": "Right curved apron board under right seat rail",
+      "approx_size_m": "0.40 x 0.02 x 0.08",
+      "count": 1,
+      "position_note": "right side between right seat rail and legs, outer face flush with leg outer faces",
+      "shape": "cube"
+    },
+    {
+      "name": "front_stretcher",
+      "description": "Front lower stretcher for footrest",
+      "approx_size_m": "0.47 x 0.03 x 0.03",
+      "count": 1,
+      "position_note": "between front legs, lowest position (~0.15m from floor)",
+      "shape": "cylinder"
+    },
+    {
+      "name": "back_stretcher",
+      "description": "Back lower stretcher connecting back legs",
+      "approx_size_m": "0.47 x 0.03 x 0.03",
+      "count": 1,
+      "position_note": "between back legs, highest position (~0.25m from floor)",
+      "shape": "cylinder"
+    },
+    {
+      "name": "left_stretcher",
+      "description": "Left stretcher connecting front and back legs",
+      "approx_size_m": "0.48 x 0.03 x 0.03",
+      "count": 1,
+      "position_note": "left side, middle height (~0.20m from floor)",
+      "shape": "cylinder"
+    },
+    {
+      "name": "right_stretcher",
+      "description": "Right stretcher connecting front and back legs",
+      "approx_size_m": "0.48 x 0.03 x 0.03",
+      "count": 1,
+      "position_note": "right side, middle height (~0.20m from floor)",
+      "shape": "cylinder"
+    }
+  ],
+  "connections": [
+    [
+      "front_left_leg",
+      "front_seat_rail"
+    ],
+    [
+      "front_right_leg",
+      "front_seat_rail"
+    ],
+    [
+      "back_left_leg",
+      "back_seat_rail"
+    ],
+    [
+      "back_right_leg",
+      "back_seat_rail"
+    ],
+    [
+      "front_seat_rail",
+      "left_seat_rail"
+    ],
+    [
+      "front_seat_rail",
+      "right_seat_rail"
+    ],
+    [
+      "back_seat_rail",
+      "left_seat_rail"
+    ],
+    [
+      "back_seat_rail",
+      "right_seat_rail"
+    ],
+    [
+      "left_seat_rail",
+      "seat_panel"
+    ],
+    [
+      "right_seat_rail",
+      "seat_panel"
+    ],
+    [
+      "front_seat_rail",
+      "seat_panel"
+    ],
+    [
+      "back_seat_rail",
+      "seat_panel"
+    ],
+    [
+      "back_seat_rail",
+      "back_splat"
+    ],
+    [
+      "top_rail",
+      "back_splat"
+    ],
+    [
+      "back_left_leg",
+      "top_rail"
+    ],
+    [
+      "back_right_leg",
+      "top_rail"
+    ],
+    [
+      "back_left_leg",
+      "left_armrest"
+    ],
+    [
+      "back_right_leg",
+      "right_armrest"
+    ],
+    [
+      "left_armrest",
+      "left_gooseneck"
+    ],
+    [
+      "right_armrest",
+      "right_gooseneck"
+    ],
+    [
+      "front_left_leg",
+      "left_gooseneck"
+    ],
+    [
+      "front_right_leg",
+      "right_gooseneck"
+    ],
+    [
+      "front_left_leg",
+      "front_apron"
+    ],
+    [
+      "front_right_leg",
+      "front_apron"
+    ],
+    [
+      "front_seat_rail",
+      "front_apron"
+    ],
+    [
+      "front_left_leg",
+      "left_apron"
+    ],
+    [
+      "back_left_leg",
+      "left_apron"
+    ],
+    [
+      "left_seat_rail",
+      "left_apron"
+    ],
+    [
+      "front_right_leg",
+      "right_apron"
+    ],
+    [
+      "back_right_leg",
+      "right_apron"
+    ],
+    [
+      "right_seat_rail",
+      "right_apron"
+    ],
+    [
+      "front_left_leg",
+      "front_stretcher"
+    ],
+    [
+      "front_right_leg",
+      "front_stretcher"
+    ],
+    [
+      "front_left_leg",
+      "left_stretcher"
+    ],
+    [
+      "back_left_leg",
+      "left_stretcher"
+    ],
+    [
+      "front_right_leg",
+      "right_stretcher"
+    ],
+    [
+      "back_right_leg",
+      "right_stretcher"
+    ],
+    [
+      "back_left_leg",
+      "back_stretcher"
+    ],
+    [
+      "back_right_leg",
+      "back_stretcher"
+    ]
+  ],
+  "overall_dimensions_m": "0.55 x 0.48 x 1.15",
+  "style_notes": "Ming dynasty scholarly elegance with 'four protrusions' (四出头) where top rail ends extend backward and armrest ends extend forward beyond posts. Legs exhibit '侧脚' (splay) for stability. Back splat features classic vertical S-curve (cyma recta) profile for ergonomic support, rendered as a thin curved panel with refined edges. Armrests supported by vertical front posts (鹅脖) rising from front legs. Stretchers follow '步步高' (step-by-step rise) pattern: front lowest, sides middle, back highest. Simple beaded edges on aprons; minimal carving to emphasize wood grain and joinery. Wood: dense hardwood like huanghuali or walnut, warm amber-brown tone.",
+  "estimated_difficulty": "complex"
+}

@@ -3,9 +3,17 @@
 Main pipeline entry point.
 
 Usage:
+    # Interactive (default): pause each round to review renders and steer
+    python main.py "做一张明式案几" --vlm --geom
     python main.py "a red cube"
-    python main.py "做一张明式案几" --iterations 3 --vlm --geom
-    python main.py "长凳" --iterations 2
+
+    # Auto / batch (non-interactive): iterate up to --iterations rounds
+    python main.py "长凳" --auto --iterations 2 --vlm --geom
+
+Interactive menu each round:
+    [a] accept & finish   [f] fix detected issues
+    [c] type your own feedback (auto-routed: structural -> replan, else -> fixer)
+    [q] quit
 """
 import argparse
 import json
@@ -20,7 +28,7 @@ load_dotenv()
 load_dotenv(".env.example")
 
 from agents.coder import CoderAgent
-from agents.planner import PlannerAgent
+from agents.planner import PlannerAgent, summarize_plan_change
 from agents.fixer import FixerAgent
 from agents.api_rag import ApiDocRetriever
 from blender.render import build_render_script
@@ -102,12 +110,127 @@ def _blender_run(
     return result["success"], result, geom_issues
 
 
+# ── Issue helpers ─────────────────────────────────────────────────────────────
+
+_VIEWS = ("front", "side", "top", "iso")
+
+
+def _print_renders(iter_dir: str) -> bool:
+    """Print clickable paths to the 4-view renders. Returns True if any exist."""
+    found = False
+    print("  Renders:")
+    for v in _VIEWS:
+        p = os.path.join(iter_dir, f"{v}.png")
+        if os.path.exists(p):
+            print(f"    {v:5s} → {p}")
+            found = True
+    if not found:
+        print("    (no render images — the script likely crashed)")
+    return found
+
+
+def _print_issues(issues: list[dict]) -> None:
+    if not issues:
+        print("  Auto-detected issues: none")
+        return
+    print(f"  Auto-detected issues ({len(issues)}):")
+    order = {"error": 0, "warning": 1, "info": 2}
+    for i in sorted(issues, key=lambda x: order.get(x.get("severity", "info"), 2)):
+        src = i.get("source", "?")
+        sev = i.get("severity", "?").upper()
+        kind = i.get("kind", "parameter")
+        print(f"    [{src}/{kind}] {sev}: {i.get('message', '')}")
+
+
+def _detect_issues(
+    iter_dir: str,
+    description: str,
+    geom_issues: list[dict],
+    use_vlm: bool,
+    use_geom: bool,
+    verbose: bool,
+) -> list[dict]:
+    """Run the enabled critics on a finished render and return their issues."""
+    issues: list[dict] = []
+    if use_geom:
+        issues.extend(i for i in geom_issues if i.get("severity") == "error")
+    if use_vlm:
+        from agents.vlm_critic import VLMCritic
+        renders = [os.path.join(iter_dir, f"{v}.png") for v in _VIEWS]
+        issues.extend(VLMCritic(verbose=verbose).critique(renders, description))
+    return issues
+
+
+def _route_issues(issues: list[dict]) -> tuple[str, list[dict]]:
+    """Split issues by kind. If any structural issue is present, route the whole
+    round to replan; otherwise patch the parameter issues with the Fixer."""
+    structural = [i for i in issues if i.get("kind") == "structural"]
+    if structural:
+        return "replan", structural
+    return "fix", issues
+
+
+def _interactive_review(
+    iter_dir: str, issues: list[dict], planner
+) -> tuple[str, list[dict]]:
+    """Show the round's result and ask the user what to do next.
+
+    Returns (action, issues_to_apply) where action is one of:
+        "accept"  — finish, keep current result
+        "fix"     — Fixer patches issues_to_apply
+        "replan"  — Planner revises the plan from issues_to_apply
+        "quit"    — abort
+    """
+    _print_renders(iter_dir)
+    _print_issues(issues)
+    print(
+        "\n  What next?\n"
+        "    [a] 接受并结束\n"
+        "    [f] 按自动检测到的问题修改\n"
+        "    [c] 我来提意见（自由输入）\n"
+        "    [q] 退出"
+    )
+    while True:
+        try:
+            choice = input("  > ").strip().lower()
+        except EOFError:
+            return "accept", []
+        if choice in ("a", "accept", ""):
+            return "accept", []
+        if choice in ("q", "quit"):
+            return "quit", []
+        if choice in ("f", "fix"):
+            if not issues:
+                print("  (没有自动检测到的问题；请用 [c] 自己提意见。)")
+                continue
+            return _route_issues(issues)
+        if choice in ("c", "comment"):
+            try:
+                feedback = input("  请输入你的修改意见：").strip()
+            except EOFError:
+                feedback = ""
+            if not feedback:
+                print("  (意见为空，已忽略。)")
+                continue
+            kind = planner.classify_feedback(feedback)
+            user_issue = {
+                "source": "user",
+                "severity": "error",
+                "kind": kind,
+                "message": feedback,
+            }
+            print(f"  → 已归类为 {kind} 问题。")
+            return ("replan" if kind == "structural" else "fix"), [user_issue]
+        print("  (无效输入，请输入 a / f / c / q。)")
+
+
 def pipeline(
     description: str,
     use_planner: bool = True,
     max_iterations: int = 1,
     use_vlm: bool = False,
     use_geom: bool = False,
+    interactive: bool = True,
     verbose: bool = False,
 ) -> dict:
     """Run the full agent pipeline.
@@ -121,15 +244,15 @@ def pipeline(
     print(f"  Description : {description}")
     print(f"  Output dir  : {run_dir}")
     print(f"  VLM critic  : {use_vlm}  |  Geom verifier: {use_geom}")
-    print(f"  Max iters   : {max_iterations}")
+    print(f"  Mode        : {'interactive' if interactive else f'auto (max {max_iterations} rounds)'}")
     print(f"{'='*60}\n")
 
     # ── Step 1: Plan ──────────────────────────────────────────────
     coder_desc = description
     plan = {}
+    planner = PlannerAgent()  # always available for replan / feedback classification
     if use_planner:
         print("[1/N] Planning...")
-        planner = PlannerAgent()
         plan = planner.plan(description)
         coder_desc = planner.plan_to_coder_description(plan)
         plan_path = os.path.join(run_dir, "plan.json")
@@ -161,7 +284,7 @@ def pipeline(
         # Auto-retry: feed the runtime traceback to the fixer
         error_msg = result.get("error_detail") or result["stderr"][-600:]
         print("  ✗ Blender error — auto-fixing...")
-        fixer = FixerAgent()
+        fixer = FixerAgent(api_rag=api_rag)
         code = fixer.fix(code, [{
             "source": "blender_runtime",
             "severity": "error",
@@ -185,53 +308,98 @@ def pipeline(
 
     issues_per_round: list[list] = []
 
-    # ── Step 5: Critic + Fixer loop ───────────────────────────────
-    if max_iterations > 1 and (use_vlm or use_geom):
-        fixer = FixerAgent(verbose=verbose)
-        # Geom issues from the *previous* run seed the next fix round
-        prev_geom_issues = geom_issues
+    # ── Step 5: Review → (Fix | Replan) loop ──────────────────────
+    # Interactive mode: pause each round, show result, let the user steer.
+    # Auto mode: run up to max_iterations rounds, routing each batch of issues
+    # to the Fixer (parameter problems) or the Planner (structural problems).
+    fixer = FixerAgent(verbose=verbose, api_rag=api_rag)
+    prev_geom_issues = geom_issues
+    # Only run the critics up front if we might actually act on them.
+    if interactive or max_iterations > 1:
+        issues = _detect_issues(iter_dir, description, prev_geom_issues, use_vlm, use_geom, verbose)
+    else:
+        issues = []
+    iteration = 0
 
-        for iteration in range(1, max_iterations):
-            print(f"\n[5/N] Critic round {iteration}...")
-            # Only error-level geom issues reach the Fixer. The geom verifier
-            # now emits exclusively zero-false-positive hard errors, but we
-            # filter explicitly so any future soft checks can't leak noise in.
-            geom_for_fixer = [i for i in prev_geom_issues if i.get("severity") == "error"]
-            all_issues: list[dict] = list(geom_for_fixer)
-
-            if use_vlm:
-                from agents.vlm_critic import VLMCritic
-                critic = VLMCritic(verbose=verbose)
-                renders = [
-                    os.path.join(iter_dir, f"{v}.png")
-                    for v in ("front", "side", "top", "iso")
-                ]
-                vlm_issues = critic.critique(renders, description)
-                all_issues.extend(vlm_issues)
-                print(f"  VLM found {len(vlm_issues)} issue(s)")
-
-            if geom_for_fixer:
-                print(f"  Geom carried {len(geom_for_fixer)} error(s) from previous run")
-
-            issues_per_round.append(all_issues)
-
-            if not all_issues:
+    while True:
+        # ── Decide what to do this round ──
+        if interactive:
+            print(f"\n[review] 第 {iteration} 轮结果 → {iter_dir}/")
+            action, to_apply = _interactive_review(iter_dir, issues, planner)
+        else:
+            if iteration >= max_iterations - 1:
+                break
+            if not issues:
                 print("  ✓ No issues found — stopping early")
                 break
+            action, to_apply = _route_issues(issues)
 
-            print(f"  Fixing {len(all_issues)} issue(s) total...")
-            code = fixer.fix(code, all_issues)
-            version = f"v{iteration}"
-            _save_code(code, os.path.join(run_dir, f"code_{version}.py"))
+        if action in ("accept", "quit"):
+            if action == "quit":
+                print("  已退出。")
+            break
 
-            iter_dir = os.path.join(run_dir, f"iter_{iteration}")
+        issues_per_round.append(issues)
+        iteration += 1
+        version = f"v{iteration}"
+
+        # ── Apply: structural → replan + regenerate; parameter → fixer patch ──
+        if action == "replan" and not plan:
+            print("  (无可修订的计划，改用 Fixer 处理。)")
+            action = "fix"
+
+        if action == "replan":
+            print(f"  ↻ Replanning from {len(to_apply)} structural issue(s)...")
+            old_plan = plan
+            plan = planner.replan(plan, to_apply)
+            with open(os.path.join(run_dir, f"plan_{version}.json"), "w", encoding="utf-8") as f:
+                json.dump(plan, f, ensure_ascii=False, indent=2)
+            print(f"     Components: {[c['name'] for c in plan.get('components', [])]}")
+            # Plan-only revise → Fixer applies the diff INCREMENTALLY, so already-tuned
+            # parts are preserved instead of being regenerated from scratch.
+            changes = summarize_plan_change(old_plan, plan)
+            if changes.strip():
+                print("  Plan diff → applying incrementally:")
+                for ln in changes.splitlines():
+                    print(f"    {ln}")
+                new_api_docs = api_rag.retrieve_for_plan(plan)
+                code = fixer.apply_plan_change(code, changes, api_docs=new_api_docs or None)
+            else:
+                print("  (计划无结构性变化 — 退回普通 Fixer 微调。)")
+                code = fixer.fix(code, to_apply)
+        else:  # fix
+            print(f"  ✎ Fixing {len(to_apply)} issue(s)...")
+            code = fixer.fix(code, to_apply)
+
+        _save_code(code, os.path.join(run_dir, f"code_{version}.py"))
+
+        # ── Re-run Blender ──
+        iter_dir = os.path.join(run_dir, f"iter_{iteration}")
+        success, result, prev_geom_issues = _blender_run(
+            code, iter_dir, use_geom=use_geom, verbose=verbose
+        )
+        if not success:
+            error_msg = result.get("error_detail") or result["stderr"][-600:]
+            print("  ✗ Blender error after change.")
+            issues = [{
+                "source": "blender_runtime", "severity": "error",
+                "kind": "parameter", "message": f"Script crashed: {error_msg}",
+            }]
+            if interactive:
+                # Surface the crash in the next review so the user can decide.
+                continue
+            # Auto mode: one fixer pass on the traceback, then give up if still broken.
+            code = fixer.fix(code, issues)
+            _save_code(code, os.path.join(run_dir, f"code_{version}_fixed.py"))
+            iter_dir = os.path.join(run_dir, f"iter_{iteration}_fixed")
             success, result, prev_geom_issues = _blender_run(
-                code, iter_dir, use_geom=use_geom
+                code, iter_dir, use_geom=use_geom, verbose=verbose
             )
             if not success:
-                print(f"  ✗ Blender error after fix:\n{result['stderr'][-400:]}")
+                print("  ✗ Still failing — stopping.")
                 break
-            print(f"  ✓ Render complete → {iter_dir}/")
+        print(f"  ✓ Render complete → {iter_dir}/")
+        issues = _detect_issues(iter_dir, description, prev_geom_issues, use_vlm, use_geom, verbose)
 
     print(f"\n{'='*60}")
     print(f"  Done. Output: {run_dir}")
@@ -250,9 +418,11 @@ def main():
     parser = argparse.ArgumentParser(description="PJ3 Blender Agent")
     parser.add_argument("description", help="Object description (Chinese or English)")
     parser.add_argument("--no-planner", action="store_true", help="Skip planner step")
-    parser.add_argument("--iterations", type=int, default=1, help="Max critic-fixer iterations")
+    parser.add_argument("--iterations", type=int, default=1, help="Max rounds in --auto mode")
     parser.add_argument("--vlm", action="store_true", help="Enable VLM critic (Day 3)")
     parser.add_argument("--geom", action="store_true", help="Enable geometry verifier (Day 4)")
+    parser.add_argument("--auto", action="store_true",
+                        help="Non-interactive batch mode: auto-iterate up to --iterations rounds")
     parser.add_argument("--verbose", action="store_true", help="Print full agent dialogue (issues + fixer I/O)")
     args = parser.parse_args()
 
@@ -262,6 +432,7 @@ def main():
         max_iterations=args.iterations,
         use_vlm=args.vlm,
         use_geom=args.geom,
+        interactive=not args.auto,
         verbose=args.verbose,
     )
 

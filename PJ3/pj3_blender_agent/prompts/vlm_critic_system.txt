@@ -38,8 +38,19 @@ Output ONLY a valid JSON array. Each element:
 {
   "source": "vlm",
   "severity": "error" | "warning" | "info",
+  "kind": "structural" | "parameter",
   "message": "<the design/aesthetic/semantic problem you observe>"
 }
+
+"kind" tells the repair system HOW the problem must be fixed:
+- "structural": fixing it requires ADDING or REMOVING a part, or changing a part's
+  basic shape/primitive — e.g. a leg is missing, there is an extra panel, or a
+  "round" table was built square and must become cylindrical. These problems need
+  the PLAN itself to change (the modeller will regenerate from a revised plan).
+- "parameter": fixing it only needs adjusting EXISTING parts — their position, size,
+  proportion, rotation, colour, or material — e.g. legs too short, back panel
+  off-centre, wrong colour, top-heavy proportion. No part is added or removed.
+When unsure, prefer "parameter".
 
 Severity guide:
 - "error": wrong object — a major part is missing, grossly misplaced, or the overall
